@@ -1,4 +1,8 @@
 
+# v0.1.1 (2014-05-09)
+
+Add the optional named parameter `callSuper` to `@ToString()` and `@EqualsAndHashCode`.
+
 # v0.1.0 (2014-05-08)
 
 Initial release available for public testing with `@ToString()` and `@EqualsAndHashCode`.

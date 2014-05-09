@@ -10,5 +10,3 @@ dependencies:
 dev_dependencies:
   unittest: '>=0.10.0 <0.11.0'
   path: '>=1.1.0 <2.0.0'
-transformers:
-- zengen

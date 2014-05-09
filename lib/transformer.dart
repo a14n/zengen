@@ -89,11 +89,21 @@ class ToStringAppender implements ContentModifier {
 
     final transformations = [];
     final cu = parseCompilationUnit(content);
-    cu.declarations.where(isClassAnnotatedWith('ToString')).forEach(
+    cu.declarations.where((c) => isAnnotated(c, 'ToString')).forEach(
         (ClassDeclaration clazz) {
-      final toString =
-          '@generated @override String toString() => "${clazz.name.name}(' +
-          getFieldNames(clazz).map((f) => '$f=\$$f').join(', ') + ')";';
+      final Annotation annotation = getAnnotation(clazz, 'ToString');
+      final NamedExpression callSuperPart =
+          annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
+          e.name.label.name == 'callSuper', orElse: () => null);
+      final bool callSuper = callSuperPart == null ? false :
+          (callSuperPart.expression.toString().trim() == 'true');
+      final fieldNames = getFieldNames(clazz);
+
+
+      final toString = '@generated @override String toString() => '
+          '"${clazz.name.name}(' + (callSuper ? 'super=\${super.toString()}' : '') +
+          (callSuper && fieldNames.isNotEmpty ? ', ' : '') + fieldNames.map((f) =>
+          '$f=\$$f').join(', ') + ')";';
 
       final index = clazz.end - 1;
       if (!isMethodDefined(clazz, 'toString')) {
@@ -112,14 +122,24 @@ class EqualsAndHashCodeAppender implements ContentModifier {
 
     final transformations = [];
     final cu = parseCompilationUnit(content);
-    cu.declarations.where(isClassAnnotatedWith('EqualsAndHashCode')).forEach(
+    cu.declarations.where((c) => isAnnotated(c, 'EqualsAndHashCode')).forEach(
         (ClassDeclaration clazz) {
+      final Annotation annotation = getAnnotation(clazz, 'EqualsAndHashCode');
+      final NamedExpression callSuperPart =
+          annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
+          e.name.label.name == 'callSuper', orElse: () => null);
+      final bool callSuper = callSuperPart == null ? false :
+          (callSuperPart.expression.toString().trim() == 'true');
       final fieldNames = getFieldNames(clazz);
+
+      final hashCodeValues = fieldNames.toList();
+      if (callSuper) hashCodeValues.insert(0, 'super.hashCode');
       final hashCode = '@generated @override int get hashCode => '
-          'hashObjects([' + fieldNames.join(', ') + ']);';
+          'hashObjects([' + hashCodeValues.join(', ') + ']);';
+
       final equals = '@generated @override bool operator==(o) => '
-          'o is ${clazz.name.name}' + fieldNames.map((f) => ' && o.$f == $f').join() +
-          ';';
+          'o is ${clazz.name.name}' + (callSuper ? ' && super == o' : '') +
+          fieldNames.map((f) => ' && o.$f == $f').join() + ';';
 
       final index = clazz.end - 1;
       if (!isMethodDefined(clazz, 'hashCode')) {
@@ -138,8 +158,11 @@ Iterable<String> getFieldNames(ClassDeclaration clazz) => clazz.members.where(
     (m) => m is FieldDeclaration && !m.isStatic).expand((FieldDeclaration f) =>
     f.fields.variables.map((v) => v.name.name));
 
-isClassAnnotatedWith(String annotation) => (e) => e is ClassDeclaration &&
-    e.metadata.any((m) => m.name.name == annotation);
+bool isAnnotated(ClassDeclaration clazz, String annotation) => getAnnotation(
+    clazz, annotation) != null;
+
+Annotation getAnnotation(ClassDeclaration clazz, String annotation) =>
+    clazz.metadata.firstWhere((m) => m.name.name == annotation, orElse: () => null);
 
 bool isMethodDefined(ClassDeclaration clazz, String methodName) =>
     clazz.members.any((m) => m is MethodDeclaration && m.name.name == methodName);

@@ -17,11 +17,13 @@ library zengen;
 export 'package:quiver/core.dart' show hashObjects;
 
 class ToString {
-  const ToString();
+  final bool callSuper;
+  const ToString({this.callSuper});
 }
 
 class EqualsAndHashCode {
-  const EqualsAndHashCode();
+  final bool callSuper;
+  const EqualsAndHashCode({this.callSuper});
 }
 
 const generated = null;
