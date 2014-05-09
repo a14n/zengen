@@ -30,3 +30,14 @@ class C extends A {
   @generated @override int get hashCode => hashObjects([c, d]);
   @generated @override bool operator ==(o) => o is C && o.c == c && o.d == d;
 }
+
+@EqualsAndHashCode(exclude: const ['b', 'd'])
+class D {
+  static var s;
+  var a;
+  int b;
+  String c, d;
+  D();
+  @generated @override int get hashCode => hashObjects([a, c]);
+  @generated @override bool operator ==(o) => o is D && o.a == a && o.c == c;
+}

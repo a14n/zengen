@@ -23,3 +23,12 @@ class C extends A {
   final String d;
   C(this.c, this.d);
 }
+
+@ToString(exclude: const ['b', 'd'])
+class D {
+  static var s;
+  var a;
+  int b;
+  String c, d;
+  D();
+}

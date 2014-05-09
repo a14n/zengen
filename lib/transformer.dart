@@ -20,6 +20,8 @@ import 'package:analyzer/analyzer.dart';
 import 'package:analyzer/src/generated/ast.dart';
 import 'package:barback/barback.dart';
 
+import 'package:zengen/zengen.dart';
+
 final MODIFIERS = <ContentModifier>[//
   new ToStringAppender(), //
   new EqualsAndHashCodeAppender(),//
@@ -91,19 +93,17 @@ class ToStringAppender implements ContentModifier {
     final cu = parseCompilationUnit(content);
     cu.declarations.where((c) => isAnnotated(c, 'ToString')).forEach(
         (ClassDeclaration clazz) {
-      final Annotation annotation = getAnnotation(clazz, 'ToString');
-      final NamedExpression callSuperPart =
-          annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
-          e.name.label.name == 'callSuper', orElse: () => null);
-      final bool callSuper = callSuperPart == null ? false :
-          (callSuperPart.expression.toString().trim() == 'true');
-      final fieldNames = getFieldNames(clazz);
-
+      final annotation = getToString(clazz);
+      final callSuper = annotation.callSuper == true;
+      final exclude = annotation.exclude == null ? [] : annotation.exclude;
+      final fieldNames = getFieldNames(clazz).where((f) => !exclude.contains(f)
+          );
 
       final toString = '@generated @override String toString() => '
-          '"${clazz.name.name}(' + (callSuper ? 'super=\${super.toString()}' : '') +
-          (callSuper && fieldNames.isNotEmpty ? ', ' : '') + fieldNames.map((f) =>
-          '$f=\$$f').join(', ') + ')";';
+          '"${clazz.name.name}(' + //
+      (callSuper ? 'super=\${super.toString()}' : '') + //
+      (callSuper && fieldNames.isNotEmpty ? ', ' : '') + //
+      fieldNames.map((f) => '$f=\$$f').join(', ') + ')";';
 
       final index = clazz.end - 1;
       if (!isMethodDefined(clazz, 'toString')) {
@@ -112,6 +112,32 @@ class ToStringAppender implements ContentModifier {
       }
     });
     return transformations;
+  }
+
+  ToString getToString(ClassDeclaration clazz) {
+    final Annotation annotation = getAnnotation(clazz, 'ToString');
+
+    if (annotation == null) return null;
+
+    bool callSuper = null;
+    List<String> exclude = null;
+
+    final NamedExpression callSuperPart =
+        annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
+        e.name.label.name == 'callSuper', orElse: () => null);
+    if (callSuperPart != null) {
+      callSuper = (callSuperPart.expression as BooleanLiteral).value;
+    }
+
+    final NamedExpression excludePart =
+        annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
+        e.name.label.name == 'exclude', orElse: () => null);
+    if (excludePart != null) {
+      exclude = (excludePart.expression as ListLiteral).elements.map(
+          (StringLiteral sl) => sl.stringValue).toList();
+    }
+
+    return new ToString(callSuper: callSuper, exclude: exclude);
   }
 }
 
@@ -124,13 +150,11 @@ class EqualsAndHashCodeAppender implements ContentModifier {
     final cu = parseCompilationUnit(content);
     cu.declarations.where((c) => isAnnotated(c, 'EqualsAndHashCode')).forEach(
         (ClassDeclaration clazz) {
-      final Annotation annotation = getAnnotation(clazz, 'EqualsAndHashCode');
-      final NamedExpression callSuperPart =
-          annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
-          e.name.label.name == 'callSuper', orElse: () => null);
-      final bool callSuper = callSuperPart == null ? false :
-          (callSuperPart.expression.toString().trim() == 'true');
-      final fieldNames = getFieldNames(clazz);
+      final annotation = getEqualsAndHashCode(clazz);
+      final callSuper = annotation.callSuper == true;
+      final exclude = annotation.exclude == null ? [] : annotation.exclude;
+      final fieldNames = getFieldNames(clazz).where((f) => !exclude.contains(f)
+          );
 
       final hashCodeValues = fieldNames.toList();
       if (callSuper) hashCodeValues.insert(0, 'super.hashCode');
@@ -151,6 +175,32 @@ class EqualsAndHashCodeAppender implements ContentModifier {
       }
     });
     return transformations;
+  }
+
+  EqualsAndHashCode getEqualsAndHashCode(ClassDeclaration clazz) {
+    final Annotation annotation = getAnnotation(clazz, 'EqualsAndHashCode');
+
+    if (annotation == null) return null;
+
+    bool callSuper = null;
+    List<String> exclude = null;
+
+    final NamedExpression callSuperPart =
+        annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
+        e.name.label.name == 'callSuper', orElse: () => null);
+    if (callSuperPart != null) {
+      callSuper = (callSuperPart.expression as BooleanLiteral).value;
+    }
+
+    final NamedExpression excludePart =
+        annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
+        e.name.label.name == 'exclude', orElse: () => null);
+    if (excludePart != null) {
+      exclude = (excludePart.expression as ListLiteral).elements.map(
+          (StringLiteral sl) => sl.stringValue).toList();
+    }
+
+    return new EqualsAndHashCode(callSuper: callSuper, exclude: exclude);
   }
 }
 

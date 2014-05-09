@@ -41,6 +41,11 @@ class A {
 }
 ```
 
+The code generated can be customize with the following optional parameters:
+
+- `callSuper`: if set to `true` the result of `toString` will contains the result of `super.toString()`.
+- `exclude`: a list of field names can be exclude with this argument.
+
 ### @EqualsAndHashCode() ###
 
 Annotating a class with `@EqualsAndHashCode()` will generate an implementation of `bool operator ==(o)` and `int get hashCode`.
@@ -68,6 +73,11 @@ class A {
   @generated @override bool operator ==(o) => o is A && o.a == a && o.b == b;
 }
 ```
+
+The code generated can be customize with the following optional parameters:
+
+- `callSuper`: if set to `true` the generated code will use additionnally `super.hashCode` and `super == o`.
+- `exclude`: a list of field names can be exclude with this argument.
 
 ## Usage ##
 To use this library in your code :

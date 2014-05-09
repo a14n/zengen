@@ -1,7 +1,8 @@
 
 # v0.1.1 (2014-05-09)
 
-Add the optional named parameter `callSuper` to `@ToString()` and `@EqualsAndHashCode`.
+- Add the optional named parameter `callSuper` to `@ToString()` and `@EqualsAndHashCode`.
+- Add the optional named parameter `exclude` to `@ToString()` and `@EqualsAndHashCode`.
 
 # v0.1.0 (2014-05-08)
 

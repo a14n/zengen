@@ -27,3 +27,13 @@ class C extends A {
   C(this.c, this.d);
   @generated @override String toString() => "C(c=$c, d=$d)";
 }
+
+@ToString(exclude: const ['b', 'd'])
+class D {
+  static var s;
+  var a;
+  int b;
+  String c, d;
+  D();
+  @generated @override String toString() => "D(a=$a, c=$c)";
+}
