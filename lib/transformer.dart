@@ -14,11 +14,13 @@
 
 library zengen.transformer;
 
-import 'dart:async' show Future;
+import 'dart:async' show Future, Completer;
 
 import 'package:analyzer/analyzer.dart';
 import 'package:analyzer/src/generated/ast.dart';
+import 'package:analyzer/src/generated/element.dart';
 import 'package:barback/barback.dart';
+import 'package:code_transformers/resolver.dart';
 
 import 'package:zengen/zengen.dart';
 
@@ -34,27 +36,68 @@ abstract class ContentModifier {
 class ZengenTransformer extends Transformer {
   ZengenTransformer.asPlugin();
 
+  Resolvers resolvers = new Resolvers(dartSdkDirectory);
+
   String get allowedExtensions => ".dart";
 
   Future apply(Transform transform) {
-    return transform.primaryInput.readAsString().then((content) {
-      final id = transform.primaryInput.id;
-      final newContent = traverseModifiers(content);
-      if (newContent != content) {
+    return resolvers.get(transform).then((resolver) {
+      return new Future(() => applyResolver(transform, resolver)).whenComplete(
+          () => resolver.release());
+    });
+  }
+
+  applyResolver(Transform transform, Resolver resolver) {
+    final assetId = transform.primaryInput.id;
+    final lib = resolver.getLibrary(assetId);
+
+    if (isPart(lib)) return;
+
+    for (final unit in lib.units) {
+      final id = unit.source.assetId;
+      final transaction = resolver.createTextEditTransaction(unit);
+      traverseModifiers(transaction.original, (List<Transformation>
+          transformations) {
+        for (final t in transformations) {
+          transaction.edit(t.begin, t.end, t.content);
+        }
+      });
+      if (transaction.hasEdits) {
+        final np = transaction.commit();
+        np.build('');
+        final newContent = np.text;
+        transform.logger.info("original for $id : \n${transaction.original}", asset: id);
+        transform.logger.info("text for $id : \n$newContent", asset: id);
         transform.logger.fine("new content for $id : \n$newContent", asset: id);
         transform.addOutput(new Asset.fromString(id, newContent));
       }
-    });
+    }
   }
+
+  bool isPart(LibraryElement lib) => lib.unit.directives.any((d) => d is
+      PartOfDirective);
+
+  //  Future apply(Transform transform) {
+  //    return transform.primaryInput.readAsString().then((content) {
+  //      final id = transform.primaryInput.id;
+  //      final newContent = traverseModifiers(content);
+  //      if (newContent != content) {
+  //        transform.logger.fine("new content for $id : \n$newContent", asset: id);
+  //        transform.addOutput(new Asset.fromString(id, newContent));
+  //      }
+  //    });
+  //  }
 }
 
-String traverseModifiers(String content) {
+String traverseModifiers(String content, [onTransformations(List<Transformation>
+    transformations)]) {
   bool modifications = true;
   while (modifications) {
     modifications = false;
     for (final modifier in MODIFIERS) {
       final transformations = modifier.accept(content);
       if (transformations.isNotEmpty) {
+        if (onTransformations != null) onTransformations(transformations);
         content = applyTransformations(content, transformations);
         modifications = true;
         break;
