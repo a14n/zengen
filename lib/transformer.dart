@@ -51,10 +51,10 @@ class ModifierTransformer extends Transformer {
 
   Future apply(Transform transform) {
     final id = transform.primaryInput.id;
-    if (unmodified.contains(id)) return null;
+    if (unmodified.contains(id)) return new Future.value();
     if (contentsPending.containsKey(id)) {
       transform.addOutput(new Asset.fromString(id, contentsPending.remove(id)));
-      return null;
+      return new Future.value();
     }
     return resolvers.get(transform).then((resolver) {
       return new Future(() => applyResolver(transform, resolver)).whenComplete(
