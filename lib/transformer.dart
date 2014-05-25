@@ -15,6 +15,7 @@
 library zengen.transformer;
 
 import 'dart:async' show Future, Completer;
+import 'dart:mirrors';
 
 import 'package:analyzer/analyzer.dart';
 import 'package:analyzer/src/generated/ast.dart';
@@ -168,7 +169,7 @@ class ToStringAppender implements ContentModifier {
     if (annotation == null) return null;
 
     bool callSuper = null;
-    List<String> exclude = null;
+    List<Symbol> exclude = null;
 
     final NamedExpression callSuperPart =
         annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
@@ -182,7 +183,7 @@ class ToStringAppender implements ContentModifier {
         e.name.label.name == 'exclude', orElse: () => null);
     if (excludePart != null) {
       exclude = (excludePart.expression as ListLiteral).elements.map(
-          (StringLiteral sl) => sl.stringValue).toList();
+          (SymbolLiteral sl) => sl.toString().substring(sl.poundSign.length)).toList();
     }
 
     return new ToString(callSuper: callSuper, exclude: exclude);
@@ -207,7 +208,7 @@ class EqualsAndHashCodeAppender implements ContentModifier {
       final hashCode = '@generated @override int get hashCode => '
           'hashObjects([' + hashCodeValues.join(', ') + ']);';
 
-      final equals = '@generated @override bool operator==(o) => '
+      final equals = '@generated @override bool operator ==(o) => '
           'o is ${clazz.name.name}' + (callSuper ? ' && super == o' : '') +
           fieldNames.map((f) => ' && o.$f == $f').join() + ';';
 
@@ -230,7 +231,7 @@ class EqualsAndHashCodeAppender implements ContentModifier {
     if (annotation == null) return null;
 
     bool callSuper = null;
-    List<String> exclude = null;
+    List<Symbol> exclude = null;
 
     final NamedExpression callSuperPart =
         annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
@@ -244,7 +245,7 @@ class EqualsAndHashCodeAppender implements ContentModifier {
         e.name.label.name == 'exclude', orElse: () => null);
     if (excludePart != null) {
       exclude = (excludePart.expression as ListLiteral).elements.map(
-          (StringLiteral sl) => sl.stringValue).toList();
+          (SymbolLiteral sl) => sl.toString().substring(sl.poundSign.length)).toList();
     }
 
     return new EqualsAndHashCode(callSuper: callSuper, exclude: exclude);

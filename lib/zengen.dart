@@ -18,13 +18,13 @@ export 'package:quiver/core.dart' show hashObjects;
 
 class ToString {
   final bool callSuper;
-  final List<String> exclude;
+  final List<Symbol> exclude;
   const ToString({this.callSuper, this.exclude});
 }
 
 class EqualsAndHashCode {
   final bool callSuper;
-  final List<String> exclude;
+  final List<Symbol> exclude;
   const EqualsAndHashCode({this.callSuper, this.exclude});
 }
 
