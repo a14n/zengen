@@ -15,7 +15,6 @@
 library zengen.transformer;
 
 import 'dart:async' show Future, Completer;
-import 'dart:mirrors';
 
 import 'package:analyzer/analyzer.dart';
 import 'package:analyzer/src/generated/ast.dart';
