@@ -12,20 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-library zengen;
+import 'to_string_test.dart' as to_string;
+import 'equals_and_hashcode_test.dart' as equals_and_hashcode;
+import 'library_with_parts_test.dart' as library_with_parts_test;
 
-export 'package:quiver/core.dart' show hashObjects;
-
-class ToString {
-  final bool callSuper;
-  final List<Symbol> exclude;
-  const ToString({this.callSuper, this.exclude});
+main() {
+  to_string.main();
+  equals_and_hashcode.main();
+  library_with_parts_test.main();
 }
-
-class EqualsAndHashCode {
-  final bool callSuper;
-  final List<Symbol> exclude;
-  const EqualsAndHashCode({this.callSuper, this.exclude});
-}
-
-const generated = null;

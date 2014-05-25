@@ -14,11 +14,14 @@
 
 library zengen.transformer;
 
-import 'dart:async' show Future;
+import 'dart:async' show Future, Completer;
+import 'dart:mirrors';
 
 import 'package:analyzer/analyzer.dart';
 import 'package:analyzer/src/generated/ast.dart';
+import 'package:analyzer/src/generated/element.dart';
 import 'package:barback/barback.dart';
+import 'package:code_transformers/resolver.dart';
 
 import 'package:zengen/zengen.dart';
 
@@ -28,40 +31,87 @@ final MODIFIERS = <ContentModifier>[//
 ];
 
 abstract class ContentModifier {
-  List<Transformation> accept(String content);
+  List<Transformation> accept(CompilationUnitElement unitElement);
 }
 
-class ZengenTransformer extends Transformer {
-  ZengenTransformer.asPlugin();
+class ZengenTransformer extends TransformerGroup {
+  ZengenTransformer.asPlugin() : this._(new ModifierTransformer());
+  ZengenTransformer._(ModifierTransformer mt) : super(new Iterable.generate(
+      1000, (_) => [mt]));
+}
+
+class ModifierTransformer extends Transformer {
+  Resolvers resolvers = new Resolvers(dartSdkDirectory);
+  List<AssetId> unmodified = [];
+
+  Map<AssetId, String> contentsPending = {};
+
+  ModifierTransformer();
 
   String get allowedExtensions => ".dart";
 
   Future apply(Transform transform) {
-    return transform.primaryInput.readAsString().then((content) {
-      final id = transform.primaryInput.id;
-      final newContent = traverseModifiers(content);
-      if (newContent != content) {
-        transform.logger.fine("new content for $id : \n$newContent", asset: id);
-        transform.addOutput(new Asset.fromString(id, newContent));
-      }
+    final id = transform.primaryInput.id;
+    if (unmodified.contains(id)) return new Future.value();
+    if (contentsPending.containsKey(id)) {
+      transform.addOutput(new Asset.fromString(id, contentsPending.remove(id)));
+      return new Future.value();
+    }
+    return resolvers.get(transform).then((resolver) {
+      return new Future(() => applyResolver(transform, resolver)).whenComplete(
+          () => resolver.release());
     });
   }
+
+  applyResolver(Transform transform, Resolver resolver) {
+    final assetId = transform.primaryInput.id;
+    final lib = resolver.getLibrary(assetId);
+
+    if (isPart(lib)) return;
+
+    for (final unit in lib.units) {
+      final id = unit.source.assetId;
+      final transaction = resolver.createTextEditTransaction(unit);
+      traverseModifiers(unit, (List<Transformation> transformations) {
+        for (final t in transformations) {
+          transaction.edit(t.begin, t.end, t.content);
+        }
+      });
+      if (transaction.hasEdits) {
+        final np = transaction.commit();
+        np.build('');
+        final newContent = np.text;
+        transform.logger.fine("new content for $id : \n$newContent", asset: id);
+        if (id == assetId) {
+          transform.addOutput(new Asset.fromString(id, newContent));
+        } else {
+          contentsPending[id] = newContent;
+        }
+      } else {
+        unmodified.add(id);
+      }
+    }
+  }
+
+  bool isPart(LibraryElement lib) => lib.unit.directives.any((d) => d is
+      PartOfDirective);
 }
 
-String traverseModifiers(String content) {
+
+void traverseModifiers(CompilationUnitElement
+    unit, onTransformations(List<Transformation> transformations)) {
   bool modifications = true;
   while (modifications) {
     modifications = false;
     for (final modifier in MODIFIERS) {
-      final transformations = modifier.accept(content);
+      final transformations = modifier.accept(unit);
       if (transformations.isNotEmpty) {
-        content = applyTransformations(content, transformations);
+        onTransformations(transformations);
         modifications = true;
-        break;
+        return;
       }
     }
   }
-  return content;
 }
 
 String applyTransformations(String content, List<Transformation>
@@ -82,16 +132,15 @@ class Transformation {
   Transformation.insertion(int index, this.content)
       : begin = index,
         end = index;
+  Transformation.deletation(this.begin, this.end) : content = '';
 }
 
 class ToStringAppender implements ContentModifier {
   @override
-  List<Transformation> accept(String content) {
-    if (!content.contains('@ToString(')) return [];
-
+  List<Transformation> accept(CompilationUnitElement unitElement) {
     final transformations = [];
-    final cu = parseCompilationUnit(content);
-    cu.declarations.where((c) => isAnnotated(c, 'ToString')).forEach(
+    unitElement.unit.declarations.where((d) => d is ClassDeclaration).where(
+        (ClassDeclaration c) => getAnnotations(c, 'ToString').isNotEmpty).forEach(
         (ClassDeclaration clazz) {
       final annotation = getToString(clazz);
       final callSuper = annotation.callSuper == true;
@@ -115,12 +164,12 @@ class ToStringAppender implements ContentModifier {
   }
 
   ToString getToString(ClassDeclaration clazz) {
-    final Annotation annotation = getAnnotation(clazz, 'ToString');
+    final Annotation annotation = getAnnotations(clazz, 'ToString').first;
 
     if (annotation == null) return null;
 
     bool callSuper = null;
-    List<String> exclude = null;
+    List<Symbol> exclude = null;
 
     final NamedExpression callSuperPart =
         annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
@@ -134,7 +183,7 @@ class ToStringAppender implements ContentModifier {
         e.name.label.name == 'exclude', orElse: () => null);
     if (excludePart != null) {
       exclude = (excludePart.expression as ListLiteral).elements.map(
-          (StringLiteral sl) => sl.stringValue).toList();
+          (SymbolLiteral sl) => sl.toString().substring(sl.poundSign.length)).toList();
     }
 
     return new ToString(callSuper: callSuper, exclude: exclude);
@@ -143,13 +192,11 @@ class ToStringAppender implements ContentModifier {
 
 class EqualsAndHashCodeAppender implements ContentModifier {
   @override
-  List<Transformation> accept(String content) {
-    if (!content.contains('@EqualsAndHashCode(')) return [];
-
+  List<Transformation> accept(CompilationUnitElement unitElement) {
     final transformations = [];
-    final cu = parseCompilationUnit(content);
-    cu.declarations.where((c) => isAnnotated(c, 'EqualsAndHashCode')).forEach(
-        (ClassDeclaration clazz) {
+    unitElement.unit.declarations.where((d) => d is ClassDeclaration).where(
+        (ClassDeclaration c) => getAnnotations(c, 'EqualsAndHashCode').isNotEmpty
+        ).forEach((ClassDeclaration clazz) {
       final annotation = getEqualsAndHashCode(clazz);
       final callSuper = annotation.callSuper == true;
       final exclude = annotation.exclude == null ? [] : annotation.exclude;
@@ -161,7 +208,7 @@ class EqualsAndHashCodeAppender implements ContentModifier {
       final hashCode = '@generated @override int get hashCode => '
           'hashObjects([' + hashCodeValues.join(', ') + ']);';
 
-      final equals = '@generated @override bool operator==(o) => '
+      final equals = '@generated @override bool operator ==(o) => '
           'o is ${clazz.name.name}' + (callSuper ? ' && super == o' : '') +
           fieldNames.map((f) => ' && o.$f == $f').join() + ';';
 
@@ -178,12 +225,13 @@ class EqualsAndHashCodeAppender implements ContentModifier {
   }
 
   EqualsAndHashCode getEqualsAndHashCode(ClassDeclaration clazz) {
-    final Annotation annotation = getAnnotation(clazz, 'EqualsAndHashCode');
+    final Annotation annotation = getAnnotations(clazz, 'EqualsAndHashCode'
+        ).first;
 
     if (annotation == null) return null;
 
     bool callSuper = null;
-    List<String> exclude = null;
+    List<Symbol> exclude = null;
 
     final NamedExpression callSuperPart =
         annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
@@ -197,7 +245,7 @@ class EqualsAndHashCodeAppender implements ContentModifier {
         e.name.label.name == 'exclude', orElse: () => null);
     if (excludePart != null) {
       exclude = (excludePart.expression as ListLiteral).elements.map(
-          (StringLiteral sl) => sl.stringValue).toList();
+          (SymbolLiteral sl) => sl.toString().substring(sl.poundSign.length)).toList();
     }
 
     return new EqualsAndHashCode(callSuper: callSuper, exclude: exclude);
@@ -208,11 +256,11 @@ Iterable<String> getFieldNames(ClassDeclaration clazz) => clazz.members.where(
     (m) => m is FieldDeclaration && !m.isStatic).expand((FieldDeclaration f) =>
     f.fields.variables.map((v) => v.name.name));
 
-bool isAnnotated(ClassDeclaration clazz, String annotation) => getAnnotation(
-    clazz, annotation) != null;
+const _LIBRARY_NAME = 'zengen';
 
-Annotation getAnnotation(ClassDeclaration clazz, String annotation) =>
-    clazz.metadata.firstWhere((m) => m.name.name == annotation, orElse: () => null);
+Iterable<Annotation> getAnnotations(Declaration declaration, String name) =>
+    declaration.metadata.where((m) => m.element.library.name == _LIBRARY_NAME &&
+    m.element is ConstructorElement && m.element.enclosingElement.name == name);
 
 bool isMethodDefined(ClassDeclaration clazz, String methodName) =>
     clazz.members.any((m) => m is MethodDeclaration && m.name.name == methodName);
