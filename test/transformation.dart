@@ -1,52 +1,40 @@
-// Copyright (c) 2013, the Dart project authors.  Please see the AUTHORS file
-// for details. All rights reserved. Use of this source code is governed by a
-// BSD-style license that can be found in the LICENSE file.
+// Copyright (c) 2014, Alexandre Ardhuin
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 import 'dart:async';
+
 import 'package:barback/barback.dart';
-import 'package:zengen/transformer.dart';
 import 'package:quiver/async.dart';
 import 'package:unittest/unittest.dart';
 
-main() {
-  group('toString', () {
-    test('simple', () {
-      final source =
-          r'''
-import 'package:zengen/zengen.dart';
-@ToString()
-class A {
-  static var s;
-  var a;
-  int b;
-  A();
-}
-''';
-      return _transform([new Asset.fromString(new AssetId('foo', 'a/b/c.dart'),
-          source)]).then((outAsserts) {
-        expect(outAsserts, hasLength(1));
-        final asset = outAsserts.first;
-        return asset.readAsString().then((content) {
-          expect(content,
-              r'''
-import 'package:zengen/zengen.dart';
-@ToString()
-class A {
-  static var s;
-  var a;
-  int b;
-  A();
-  @generated @override String toString() => "A(a=$a, b=$b)";
-}
-'''
-              );
-        });
-      });
-    });
-  });
+import 'package:zengen/transformer.dart';
+
+void testTransformation(String spec, String source, String expectedContent) {
+  test(spec, () => transformContent(source).then((content) {
+    expect(content, expectedContent);
+  }));
 }
 
-Future<List<Asset>> _transform(List<Asset> assets) {
+Future<String> transformContent(String content) => transformAssets(
+    [new Asset.fromString(new AssetId('foo', 'a/b/c.dart'), content)]).then(
+    (outAsserts) {
+  expect(outAsserts, hasLength(1));
+  final asset = outAsserts.first;
+  return asset.readAsString();
+});
+
+Future<List<Asset>> transformAssets(List<Asset> assets) {
   final transformerGroup = new ZengenTransformer.asPlugin();
   final phases = transformerGroup.phases.map((e) => e.toList()).toList();
   List<Asset> outs = assets;
