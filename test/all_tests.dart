@@ -14,10 +14,12 @@
 
 import 'to_string_test.dart' as to_string;
 import 'equals_and_hashcode_test.dart' as equals_and_hashcode;
-import 'library_with_parts_test.dart' as library_with_parts_test;
+import 'library_with_parts_test.dart' as library_with_parts;
+import 'delegate_test.dart' as delegate;
 
 main() {
   to_string.main();
   equals_and_hashcode.main();
-  library_with_parts_test.main();
+  library_with_parts.main();
+  delegate.main();
 }

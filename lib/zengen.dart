@@ -16,6 +16,8 @@ library zengen;
 
 export 'package:quiver/core.dart' show hashObjects;
 
+const generated = null;
+
 class ToString {
   final bool callSuper;
   final List<Symbol> exclude;
@@ -28,4 +30,8 @@ class EqualsAndHashCode {
   const EqualsAndHashCode({this.callSuper, this.exclude});
 }
 
-const generated = null;
+class Delegate {
+  final Type template;
+  final List<Symbol> exclude;
+  const Delegate(this.template, {this.exclude});
+}

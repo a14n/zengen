@@ -26,7 +26,8 @@ import 'package:zengen/zengen.dart';
 
 final MODIFIERS = <ContentModifier>[//
   new ToStringAppender(), //
-  new EqualsAndHashCodeAppender(),//
+  new EqualsAndHashCodeAppender(), //
+  new DelegateAppender(), //
 ];
 
 abstract class ContentModifier {
@@ -250,6 +251,107 @@ class EqualsAndHashCodeAppender implements ContentModifier {
     return new EqualsAndHashCode(callSuper: callSuper, exclude: exclude);
   }
 }
+
+class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
+    {
+  final transformations = [];
+
+  @override
+  List<Transformation> accept(CompilationUnitElement unitElement) {
+    transformations.clear();
+    unitElement.unit.visitChildren(this);
+    return transformations;
+  }
+
+  @override
+  visitFieldDeclaration(FieldDeclaration node) {
+    final delegates = getAnnotations(node, 'Delegate');
+    final ClassDeclaration clazz = node.parent;
+    final index = node.parent.end - 1;
+    for (final delegate in delegates) {
+      final excludes = getExcludes(delegate);
+      final SimpleIdentifier template = delegate.arguments.arguments.first;
+      final ClassElement templateElement = template.staticElement;
+      for (final method in templateElement.methods) {
+        if (isMemberAlreadyDefined(clazz, method.displayName)) {
+          continue;
+        }
+        if (excludes.contains(method.displayName)) {
+          continue;
+        }
+
+        final requiredParameters = method.parameters.where((p) =>
+            p.parameterKind == ParameterKind.REQUIRED);
+        String parametersDeclaration = requiredParameters.join(', ');
+        String parametersCall = requiredParameters.map((e) => e.name).join(', '
+            );
+
+        final optionalPositionalParameters = method.parameters.where((p) =>
+            p.parameterKind == ParameterKind.POSITIONAL);
+        if (optionalPositionalParameters.isNotEmpty) {
+          if (requiredParameters.isNotEmpty) {
+            parametersDeclaration += ', ';
+            parametersCall += ', ';
+          }
+          parametersDeclaration += '[';
+          parametersDeclaration += optionalPositionalParameters.map((e) {
+            final s = e.toString();
+            return s.substring(1, s.length - 1);
+          }).join(', ');
+          parametersDeclaration += ']';
+          parametersCall += optionalPositionalParameters.map((e) => e.name
+              ).join(', ');
+        }
+
+        final optionalNamedParameters = method.parameters.where((p) =>
+            p.parameterKind == ParameterKind.NAMED);
+        if (optionalNamedParameters.isNotEmpty) {
+          if (requiredParameters.isNotEmpty) {
+            parametersDeclaration += ', ';
+            parametersCall += ', ';
+          }
+          parametersDeclaration += '{';
+          parametersDeclaration += optionalNamedParameters.map((e) {
+            final s = e.toString();
+            return s.substring(1, s.length - 1);
+          }).join(', ');
+          parametersDeclaration += '}';
+          parametersCall += optionalNamedParameters.map((e) =>
+              '${e.name}: ${e.name}').join(', ');
+        }
+
+        final returnType = method.returnType;
+        String methodSignature =
+            '${method.displayName}($parametersDeclaration)';
+        String delegateCall =
+            '${node.fields.variables.first.name.name}.${method.displayName}($parametersCall)';
+
+        String code = '@generated ';
+        if (returnType.isVoid) {
+          code += '$returnType $methodSignature { $delegateCall; }';
+        } else {
+          code += '$returnType $methodSignature => $delegateCall;';
+        }
+        transformations.add(new Transformation.insertion(index, '  $code\n'));
+      }
+    }
+  }
+  List<String> getExcludes(Annotation delegate) {
+    final NamedExpression excludePart = delegate.arguments.arguments.firstWhere(
+        (e) => e is NamedExpression && e.name.label.name == 'exclude', orElse: () =>
+        null);
+    if (excludePart != null) {
+      return (excludePart.expression as ListLiteral).elements.map((SymbolLiteral
+          sl) => sl.toString().substring(sl.poundSign.length)).toList();
+    }
+    return [];
+  }
+}
+
+isMemberAlreadyDefined(ClassDeclaration clazz, String name) =>
+    clazz.members.any((m) => (m is MethodDeclaration && m.name.name == name) || (m
+    is FieldDeclaration && m.fields.variables.any((f) => f.name.name == name)) || (m
+    is ConstructorDeclaration && m.name.name == name));
 
 Iterable<String> getFieldNames(ClassDeclaration clazz) => clazz.members.where(
     (m) => m is FieldDeclaration && !m.isStatic).expand((FieldDeclaration f) =>
