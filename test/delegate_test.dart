@@ -24,7 +24,7 @@ abstract class A {
   m1();
 }
 class B {
-  @Delegate(A) var _a;
+  @Delegate() A _a;
 }
 ''',
       r'''
@@ -33,7 +33,7 @@ abstract class A {
   m1();
 }
 class B {
-  @Delegate(A) var _a;
+  @Delegate() A _a;
   @generated dynamic m1() => _a.m1();
 }
 '''
@@ -46,7 +46,7 @@ abstract class A {
   m1(a, int b);
 }
 class B {
-  @Delegate(A) var _a;
+  @Delegate() A _a;
 }
 ''',
       r'''
@@ -55,7 +55,7 @@ abstract class A {
   m1(a, int b);
 }
 class B {
-  @Delegate(A) var _a;
+  @Delegate() A _a;
   @generated dynamic m1(dynamic a, int b) => _a.m1(a, b);
 }
 '''
@@ -69,7 +69,7 @@ abstract class A {
   m2([int b = 1, c]);
 }
 class B {
-  @Delegate(A) var _a;
+  @Delegate() A _a;
 }
 ''',
       r'''
@@ -79,7 +79,7 @@ abstract class A {
   m2([int b = 1, c]);
 }
 class B {
-  @Delegate(A) var _a;
+  @Delegate() A _a;
   @generated dynamic m1(String a, [int b, dynamic c]) => _a.m1(a, b, c);
   @generated dynamic m2([int b, dynamic c]) => _a.m2(b, c);
 }
@@ -94,7 +94,7 @@ abstract class A {
   m2({int b, c});
 }
 class B {
-  @Delegate(A) var _a;
+  @Delegate() A _a;
 }
 ''',
       r'''
@@ -104,15 +104,14 @@ abstract class A {
   m2({int b, c});
 }
 class B {
-  @Delegate(A) var _a;
+  @Delegate() A _a;
   @generated dynamic m1(String a, {int b, dynamic c}) => _a.m1(a, b: b, c: c);
   @generated dynamic m2({int b, dynamic c}) => _a.m2(b: b, c: c);
 }
 '''
       );
 
-  testTransformation(
-      '@Delegate(A, exclude: const[#b]) should should not create m1',
+  testTransformation('@Delegate(exclude: const[#b]) should not create m1',
       r'''
 import 'package:zengen/zengen.dart';
 abstract class A {
@@ -120,7 +119,7 @@ abstract class A {
   m2({int b, c});
 }
 class B {
-  @Delegate(A, exclude:  const[#m1]) var _a;
+  @Delegate(exclude: const[#m1]) A _a;
 }
 ''',
       r'''
@@ -130,8 +129,128 @@ abstract class A {
   m2({int b, c});
 }
 class B {
-  @Delegate(A, exclude:  const[#m1]) var _a;
+  @Delegate(exclude: const[#m1]) A _a;
   @generated dynamic m2({int b, dynamic c}) => _a.m2(b: b, c: c);
+}
+'''
+      );
+
+  testTransformation('@Delegate() should handle generics 1',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A<E> {
+  E m1(E e);
+}
+class B<E> {
+  @Delegate() A<E> _a;
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A<E> {
+  E m1(E e);
+}
+class B<E> {
+  @Delegate() A<E> _a;
+  @generated E m1(E e) => _a.m1(e);
+}
+'''
+      );
+
+  testTransformation('@Delegate() should handle generics 2',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A<E> {
+  E m1(E e);
+}
+class B {
+  @Delegate() A<String> _a;
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A<E> {
+  E m1(E e);
+}
+class B {
+  @Delegate() A<String> _a;
+  @generated String m1(String e) => _a.m1(e);
+}
+'''
+      );
+
+  testTransformation(
+      '@Delegate() should handle generics with type specifications',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A<S,T> {
+  T m1(S e);
+  S m2(T e);
+}
+class B<S> {
+  @Delegate() A<S, int> _a;
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A<S,T> {
+  T m1(S e);
+  S m2(T e);
+}
+class B<S> {
+  @Delegate() A<S, int> _a;
+  @generated int m1(S e) => _a.m1(e);
+  @generated S m2(int e) => _a.m2(e);
+}
+'''
+      );
+
+  testTransformation('@Delegate() should handle generics with bounds',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A<S,T extends int> {
+  T m1(S e);
+  S m2(T e);
+}
+class B<S> {
+  @Delegate() A<S, int> _a;
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A<S,T extends int> {
+  T m1(S e);
+  S m2(T e);
+}
+class B<S> {
+  @Delegate() A<S, int> _a;
+  @generated int m1(S e) => _a.m1(e);
+  @generated S m2(int e) => _a.m2(e);
+}
+'''
+      );
+
+  testTransformation('@Delegate() should handle generics not specified',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A<S,T extends int> {
+  T m1(S e);
+  S m2(T e);
+}
+class B<S> {
+  @Delegate() A _a;
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A<S,T extends int> {
+  T m1(S e);
+  S m2(T e);
+}
+class B<S> {
+  @Delegate() A _a;
+  @generated int m1(dynamic e) => _a.m1(e);
+  @generated dynamic m2(int e) => _a.m2(e);
 }
 '''
       );

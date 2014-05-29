@@ -20,8 +20,9 @@ import 'package:unittest/unittest.dart';
 
 import 'package:zengen/transformer.dart';
 
-void testTransformation(String spec, String source, String expectedContent) {
-  test(spec, () => transformContent(source).then((content) {
+void testTransformation(String spec, String source, String expectedContent, {solo: false}) {
+  final t = solo ? solo_test : test;
+  t(spec, () => transformContent(source).then((content) {
     expect(content, expectedContent);
   }));
 }

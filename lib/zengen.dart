@@ -31,7 +31,6 @@ class EqualsAndHashCode {
 }
 
 class Delegate {
-  final Type template;
   final List<Symbol> exclude;
-  const Delegate(this.template, {this.exclude});
+  const Delegate({this.exclude});
 }

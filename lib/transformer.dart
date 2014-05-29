@@ -97,7 +97,6 @@ class ModifierTransformer extends Transformer {
       PartOfDirective);
 }
 
-
 void traverseModifiers(CompilationUnitElement
     unit, onTransformations(List<Transformation> transformations)) {
   bool modifications = true;
@@ -263,26 +262,52 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
     return transformations;
   }
 
+  @override visitMethodDeclaration(MethodDeclaration node) {
+    if (!node.isGetter) return;
+    _transform(node, node.parent, node.returnType, node.name.name);
+  }
+
   @override
-  visitFieldDeclaration(FieldDeclaration node) {
+  visitFieldDeclaration(FieldDeclaration node) => _transform(node, node.parent,
+      node.fields.type, node.fields.variables.first.name.name);
+
+  _transform(Declaration node, ClassDeclaration clazz, TypeName typeName, String
+      targetName) {
     final delegates = getAnnotations(node, 'Delegate');
-    final ClassDeclaration clazz = node.parent;
+    if (delegates.isEmpty) return;
+
     final index = node.parent.end - 1;
     for (final delegate in delegates) {
       final excludes = getExcludes(delegate);
-      final SimpleIdentifier template = delegate.arguments.arguments.first;
-      final ClassElement templateElement = template.staticElement;
+      final ClassElement templateElement = typeName.type.element;
+      final classTypeParameters = templateElement.typeParameters;
       for (final method in templateElement.methods) {
-        if (isMemberAlreadyDefined(clazz, method.displayName)) {
-          continue;
+        if (isMemberAlreadyDefined(clazz, method.displayName)) continue;
+        if (excludes.contains(method.displayName)) continue;
+
+        String substituteTypeToGeneric(Element e) {
+          String f(TypeParameterElement e) {
+            final index = classTypeParameters.indexOf(e.type.element);
+            if (typeName.typeArguments == null) {
+              if (e.type.element.bound == null) return 'dynamic';
+              return e.type.element.bound.displayName;
+            }
+            return typeName.typeArguments.arguments[index].name.name;
+          }
+          if (e is ParameterElement && e.type.element is TypeParameterElement) {
+            return f(e.type.element) + ' ' + e.name;
+          }
+          if (e is TypeParameterElement) {
+            return f(e);
+          }
+          return e.toString();
         }
-        if (excludes.contains(method.displayName)) {
-          continue;
-        }
+        ;
 
         final requiredParameters = method.parameters.where((p) =>
             p.parameterKind == ParameterKind.REQUIRED);
-        String parametersDeclaration = requiredParameters.join(', ');
+        String parametersDeclaration = requiredParameters.map(
+            substituteTypeToGeneric).join(', ');
         String parametersCall = requiredParameters.map((e) => e.name).join(', '
             );
 
@@ -294,10 +319,8 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
             parametersCall += ', ';
           }
           parametersDeclaration += '[';
-          parametersDeclaration += optionalPositionalParameters.map((e) {
-            final s = e.toString();
-            return s.substring(1, s.length - 1);
-          }).join(', ');
+          parametersDeclaration += optionalPositionalParameters.map(
+              substituteTypeToGeneric).map((s) => s.substring(1, s.length - 1)).join(', ');
           parametersDeclaration += ']';
           parametersCall += optionalPositionalParameters.map((e) => e.name
               ).join(', ');
@@ -311,10 +334,8 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
             parametersCall += ', ';
           }
           parametersDeclaration += '{';
-          parametersDeclaration += optionalNamedParameters.map((e) {
-            final s = e.toString();
-            return s.substring(1, s.length - 1);
-          }).join(', ');
+          parametersDeclaration += optionalNamedParameters.map(
+              substituteTypeToGeneric).map((s) => s.substring(1, s.length - 1)).join(', ');
           parametersDeclaration += '}';
           parametersCall += optionalNamedParameters.map((e) =>
               '${e.name}: ${e.name}').join(', ');
@@ -324,13 +345,14 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
         String methodSignature =
             '${method.displayName}($parametersDeclaration)';
         String delegateCall =
-            '${node.fields.variables.first.name.name}.${method.displayName}($parametersCall)';
+            '${targetName}.${method.displayName}($parametersCall)';
 
         String code = '@generated ';
         if (returnType.isVoid) {
           code += '$returnType $methodSignature { $delegateCall; }';
         } else {
-          code += '$returnType $methodSignature => $delegateCall;';
+          code +=
+              '${substituteTypeToGeneric(returnType.element)} $methodSignature => $delegateCall;';
         }
         transformations.add(new Transformation.insertion(index, '  $code\n'));
       }
