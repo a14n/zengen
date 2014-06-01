@@ -333,4 +333,26 @@ class B {
 }
 '''
       );
+
+  testTransformation('@Delegate() should prefix by this. when naming conflicts',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A {
+  m1(_a);
+}
+class B {
+  @Delegate() A _a;
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A {
+  m1(_a);
+}
+class B {
+  @Delegate() A _a;
+  @generated dynamic m1(dynamic _a) => this._a.m1(_a);
+}
+'''
+      );
 }
