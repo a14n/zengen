@@ -254,4 +254,32 @@ class B<S> {
 }
 '''
       );
+
+  testTransformation('@Delegate() should handle operators',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A {
+  bool operator >(other);
+  void operator []=(String key,value);
+  operator [](key);
+}
+class B {
+  @Delegate() A _a;
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A {
+  bool operator >(other);
+  void operator []=(String key,value);
+  operator [](key);
+}
+class B {
+  @Delegate() A _a;
+  @generated bool operator >(dynamic other) => _a > other;
+  @generated void operator []=(String key, dynamic value) { _a[key] = value; }
+  @generated dynamic operator [](dynamic key) => _a[key];
+}
+'''
+      );
 }

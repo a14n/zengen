@@ -346,6 +346,19 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
             '${method.displayName}($parametersDeclaration)';
         String delegateCall =
             '${targetName}.${method.displayName}($parametersCall)';
+        if (method.isOperator) {
+          methodSignature =
+              'operator ${method.displayName}($parametersDeclaration)';
+          delegateCall = '${targetName} ${method.displayName} $parametersCall';
+          if (method.displayName == '[]') {
+            final parameter = requiredParameters.map((e) => e.name).first;
+            delegateCall = '${targetName}[$parameter]';
+          }
+          if (method.displayName == '[]=') {
+            final parameters = requiredParameters.map((e) => e.name).toList();
+            delegateCall = '${targetName}[${parameters[0]}] = ${parameters[1]}';
+          }
+        }
 
         String code = '@generated ';
         if (returnType.isVoid) {
