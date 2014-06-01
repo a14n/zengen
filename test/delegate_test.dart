@@ -39,6 +39,28 @@ class B {
 '''
       );
 
+  testTransformation('@Delegate() should work when used on a getter',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A {
+  m1();
+}
+class B {
+  @Delegate() A get _a;
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A {
+  m1();
+}
+class B {
+  @Delegate() A get _a;
+  @generated dynamic m1() => _a.m1();
+}
+'''
+      );
+
   testTransformation('@Delegate() should handle parameter',
       r'''
 import 'package:zengen/zengen.dart';
