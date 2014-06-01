@@ -281,28 +281,45 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
       final excludes = getExcludes(delegate);
       final ClassElement templateElement = typeName.type.element;
       final classTypeParameters = templateElement.typeParameters;
+
+      String substituteTypeToGeneric(Element e) {
+        String f(TypeParameterElement e) {
+          final index = classTypeParameters.indexOf(e.type.element);
+          if (typeName.typeArguments == null) {
+            if (e.type.element.bound == null) return 'dynamic';
+            return e.type.element.bound.displayName;
+          }
+          return typeName.typeArguments.arguments[index].name.name;
+        }
+        if (e is ParameterElement && e.type.element is TypeParameterElement) {
+          return f(e.type.element) + ' ' + e.name;
+        }
+        if (e is TypeParameterElement) {
+          return f(e);
+        }
+        return e.toString();
+      }
+
+      for (final accessor in templateElement.accessors) {
+        if (isMemberAlreadyDefined(clazz, accessor.displayName)) continue;
+        if (excludes.contains(accessor.displayName)) continue;
+
+        String code = '@generated ';
+        if (accessor.isSetter) {
+          if (accessor.returnType.isVoid) code += 'void ';
+          code +=
+              'set ${accessor.displayName}(${substituteTypeToGeneric(accessor.parameters.first)}) { ${mayPrefixByThis(targetName, accessor.parameters)}.${accessor.displayName} = ${accessor.parameters.first.name}; }';
+        } else if (accessor.isGetter) {
+          code +=
+              '${substituteTypeToGeneric(accessor.returnType.element)} get ${accessor.displayName} => ${mayPrefixByThis(targetName, accessor.parameters)}.${accessor.displayName};';
+
+        }
+        transformations.add(new Transformation.insertion(index, '  $code\n'));
+      }
+
       for (final method in templateElement.methods) {
         if (isMemberAlreadyDefined(clazz, method.displayName)) continue;
         if (excludes.contains(method.displayName)) continue;
-
-        String substituteTypeToGeneric(Element e) {
-          String f(TypeParameterElement e) {
-            final index = classTypeParameters.indexOf(e.type.element);
-            if (typeName.typeArguments == null) {
-              if (e.type.element.bound == null) return 'dynamic';
-              return e.type.element.bound.displayName;
-            }
-            return typeName.typeArguments.arguments[index].name.name;
-          }
-          if (e is ParameterElement && e.type.element is TypeParameterElement) {
-            return f(e.type.element) + ' ' + e.name;
-          }
-          if (e is TypeParameterElement) {
-            return f(e);
-          }
-          return e.toString();
-        }
-        ;
 
         final requiredParameters = method.parameters.where((p) =>
             p.parameterKind == ParameterKind.REQUIRED);
@@ -345,24 +362,27 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
         String methodSignature =
             '${method.displayName}($parametersDeclaration)';
         String delegateCall =
-            '${targetName}.${method.displayName}($parametersCall)';
+            '${mayPrefixByThis(targetName, method.parameters)}.${method.displayName}($parametersCall)';
         if (method.isOperator) {
           methodSignature =
               'operator ${method.displayName}($parametersDeclaration)';
-          delegateCall = '${targetName} ${method.displayName} $parametersCall';
+          delegateCall =
+              '${mayPrefixByThis(targetName, method.parameters)} ${method.displayName} $parametersCall';
           if (method.displayName == '[]') {
             final parameter = requiredParameters.map((e) => e.name).first;
-            delegateCall = '${targetName}[$parameter]';
+            delegateCall =
+                '${mayPrefixByThis(targetName, method.parameters)}[$parameter]';
           }
           if (method.displayName == '[]=') {
             final parameters = requiredParameters.map((e) => e.name).toList();
-            delegateCall = '${targetName}[${parameters[0]}] = ${parameters[1]}';
+            delegateCall =
+                '${mayPrefixByThis(targetName, method.parameters)}[${parameters[0]}] = ${parameters[1]}';
           }
         }
 
         String code = '@generated ';
         if (returnType.isVoid) {
-          code += '$returnType $methodSignature { $delegateCall; }';
+          code += 'void $methodSignature { $delegateCall; }';
         } else {
           code +=
               '${substituteTypeToGeneric(returnType.element)} $methodSignature => $delegateCall;';
@@ -371,6 +391,11 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
       }
     }
   }
+
+  mayPrefixByThis(String targetName, List<ParameterElement> parameters) =>
+      parameters.map((p) => p.displayName).any((name) => name == targetName) ?
+      'this.$targetName' : targetName;
+
   List<String> getExcludes(Annotation delegate) {
     final NamedExpression excludePart = delegate.arguments.arguments.firstWhere(
         (e) => e is NamedExpression && e.name.label.name == 'exclude', orElse: () =>

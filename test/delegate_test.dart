@@ -304,4 +304,33 @@ class B {
 }
 '''
       );
+
+  testTransformation('@Delegate() should handle operators',
+      r'''
+import 'package:zengen/zengen.dart';
+class A {
+  int a;
+  get b => null;
+  set c(String value) {}
+}
+class B {
+  @Delegate() A _a;
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+class A {
+  int a;
+  get b => null;
+  set c(String value) {}
+}
+class B {
+  @Delegate() A _a;
+  @generated int get a => _a.a;
+  @generated void set a(int _a) { this._a.a = _a; }
+  @generated dynamic get b => _a.b;
+  @generated set c(String value) { _a.c = value; }
+}
+'''
+      );
 }
