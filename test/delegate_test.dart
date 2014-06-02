@@ -61,6 +61,35 @@ class B {
 '''
       );
 
+  testTransformation('@Delegate() should work setters and getters are mixed',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A {
+  get a;
+  set b(v);
+}
+class B {
+  @Delegate() A _a;
+  set a(v) => null;
+  get b => null;
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A {
+  get a;
+  set b(v);
+}
+class B {
+  @Delegate() A _a;
+  set a(v) => null;
+  get b => null;
+  @generated dynamic get a => _a.a;
+  @generated set b(dynamic v) { _a.b = v; }
+}
+'''
+      );
+
   testTransformation('@Delegate() should handle parameter',
       r'''
 import 'package:zengen/zengen.dart';
@@ -352,6 +381,63 @@ abstract class A {
 class B {
   @Delegate() A _a;
   @generated dynamic m1(dynamic _a) => this._a.m1(_a);
+}
+'''
+      );
+
+  testTransformation('@Delegate() should add inherited members',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A {
+  m1();
+}
+abstract class M1 {
+  m2();
+}
+abstract class M2 {
+  m3();
+}
+abstract class I1 {
+  m4();
+}
+abstract class I2<T> {
+  T m5();
+}
+abstract class B extends A with M1, M2 implements I1, I2<int> {
+  m6();
+}
+class C {
+  @Delegate() B b;
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A {
+  m1();
+}
+abstract class M1 {
+  m2();
+}
+abstract class M2 {
+  m3();
+}
+abstract class I1 {
+  m4();
+}
+abstract class I2<T> {
+  T m5();
+}
+abstract class B extends A with M1, M2 implements I1, I2<int> {
+  m6();
+}
+class C {
+  @Delegate() B b;
+  @generated dynamic m6() => b.m6();
+  @generated dynamic m4() => b.m4();
+  @generated int m5() => b.m5();
+  @generated dynamic m2() => b.m2();
+  @generated dynamic m3() => b.m3();
+  @generated dynamic m1() => b.m1();
 }
 '''
       );

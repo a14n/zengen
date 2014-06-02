@@ -24,6 +24,9 @@ import 'package:code_transformers/resolver.dart';
 
 import 'package:zengen/zengen.dart';
 
+const DELEGATE_EXCLUDES = const <String>['hashCode', 'runtimeType', '==',
+    'toString', 'noSuchMethod'];
+
 final MODIFIERS = <ContentModifier>[//
   new ToStringAppender(), //
   new EqualsAndHashCodeAppender(), //
@@ -280,116 +283,142 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
     for (final delegate in delegates) {
       final excludes = getExcludes(delegate);
       final ClassElement templateElement = typeName.type.element;
-      final classTypeParameters = templateElement.typeParameters;
-
-      String substituteTypeToGeneric(Element e) {
-        String f(TypeParameterElement e) {
-          final index = classTypeParameters.indexOf(e.type.element);
-          if (typeName.typeArguments == null) {
-            if (e.type.element.bound == null) return 'dynamic';
-            return e.type.element.bound.displayName;
-          }
-          return typeName.typeArguments.arguments[index].name.name;
-        }
-        if (e is ParameterElement && e.type.element is TypeParameterElement) {
-          return f(e.type.element) + ' ' + e.name;
-        }
-        if (e is TypeParameterElement) {
-          return f(e);
-        }
-        return e.toString();
-      }
-
-      for (final accessor in templateElement.accessors) {
-        if (isMemberAlreadyDefined(clazz, accessor.displayName)) continue;
-        if (excludes.contains(accessor.displayName)) continue;
-
-        String code = '@generated ';
-        if (accessor.isSetter) {
-          if (accessor.returnType.isVoid) code += 'void ';
-          code +=
-              'set ${accessor.displayName}(${substituteTypeToGeneric(accessor.parameters.first)}) { ${mayPrefixByThis(targetName, accessor.parameters)}.${accessor.displayName} = ${accessor.parameters.first.name}; }';
-        } else if (accessor.isGetter) {
-          code +=
-              '${substituteTypeToGeneric(accessor.returnType.element)} get ${accessor.displayName} => ${mayPrefixByThis(targetName, accessor.parameters)}.${accessor.displayName};';
-
-        }
+      handleTemplate(clazz, targetName, templateElement, typeName.typeArguments
+          == null ? null : typeName.typeArguments.arguments.map((e) => e.name.name
+          ).toList(), excludes, (displayName, code) {
+        excludes.add(displayName);
         transformations.add(new Transformation.insertion(index, '  $code\n'));
-      }
-
-      for (final method in templateElement.methods) {
-        if (isMemberAlreadyDefined(clazz, method.displayName)) continue;
-        if (excludes.contains(method.displayName)) continue;
-
-        final requiredParameters = method.parameters.where((p) =>
-            p.parameterKind == ParameterKind.REQUIRED);
-        String parametersDeclaration = requiredParameters.map(
-            substituteTypeToGeneric).join(', ');
-        String parametersCall = requiredParameters.map((e) => e.name).join(', '
-            );
-
-        final optionalPositionalParameters = method.parameters.where((p) =>
-            p.parameterKind == ParameterKind.POSITIONAL);
-        if (optionalPositionalParameters.isNotEmpty) {
-          if (requiredParameters.isNotEmpty) {
-            parametersDeclaration += ', ';
-            parametersCall += ', ';
-          }
-          parametersDeclaration += '[';
-          parametersDeclaration += optionalPositionalParameters.map(
-              substituteTypeToGeneric).map((s) => s.substring(1, s.length - 1)).join(', ');
-          parametersDeclaration += ']';
-          parametersCall += optionalPositionalParameters.map((e) => e.name
-              ).join(', ');
-        }
-
-        final optionalNamedParameters = method.parameters.where((p) =>
-            p.parameterKind == ParameterKind.NAMED);
-        if (optionalNamedParameters.isNotEmpty) {
-          if (requiredParameters.isNotEmpty) {
-            parametersDeclaration += ', ';
-            parametersCall += ', ';
-          }
-          parametersDeclaration += '{';
-          parametersDeclaration += optionalNamedParameters.map(
-              substituteTypeToGeneric).map((s) => s.substring(1, s.length - 1)).join(', ');
-          parametersDeclaration += '}';
-          parametersCall += optionalNamedParameters.map((e) =>
-              '${e.name}: ${e.name}').join(', ');
-        }
-
-        final returnType = method.returnType;
-        String methodSignature =
-            '${method.displayName}($parametersDeclaration)';
-        String delegateCall =
-            '${mayPrefixByThis(targetName, method.parameters)}.${method.displayName}($parametersCall)';
-        if (method.isOperator) {
-          methodSignature =
-              'operator ${method.displayName}($parametersDeclaration)';
-          delegateCall =
-              '${mayPrefixByThis(targetName, method.parameters)} ${method.displayName} $parametersCall';
-          if (method.displayName == '[]') {
-            final parameter = requiredParameters.map((e) => e.name).first;
-            delegateCall =
-                '${mayPrefixByThis(targetName, method.parameters)}[$parameter]';
-          }
-          if (method.displayName == '[]=') {
-            final parameters = requiredParameters.map((e) => e.name).toList();
-            delegateCall =
-                '${mayPrefixByThis(targetName, method.parameters)}[${parameters[0]}] = ${parameters[1]}';
-          }
-        }
-
-        String code = '@generated ';
-        if (returnType.isVoid) {
-          code += 'void $methodSignature { $delegateCall; }';
-        } else {
-          code +=
-              '${substituteTypeToGeneric(returnType.element)} $methodSignature => $delegateCall;';
-        }
-        transformations.add(new Transformation.insertion(index, '  $code\n'));
-      }
+      });
     }
+  }
+
+  void handleTemplate(ClassDeclaration clazz, String targetName, ClassElement
+      templateElement, List<String> typeArguments, List<String> excludes, void
+      addMember(String displayName, String code)) {
+    final classTypeParameters = templateElement.typeParameters;
+
+    substituteTypeToGeneric(Element e) => this.substituteTypeToGeneric(
+        classTypeParameters, typeArguments, e);
+
+    for (final accessor in templateElement.accessors) {
+      final displayName = accessor.displayName + (accessor.isSetter ? '=' : '');
+      if (isMemberAlreadyDefined(clazz, displayName)) continue;
+      if (excludes.contains(displayName)) continue;
+
+      String code = '@generated ';
+      if (accessor.isSetter) {
+        if (accessor.returnType.isVoid) code += 'void ';
+        code +=
+            'set ${accessor.displayName}(${substituteTypeToGeneric(accessor.parameters.first)}) { ${mayPrefixByThis(targetName, accessor.parameters)}.${accessor.displayName} = ${accessor.parameters.first.name}; }';
+      } else if (accessor.isGetter) {
+        code +=
+            '${substituteTypeToGeneric(accessor.returnType.element)} get ${accessor.displayName} => ${mayPrefixByThis(targetName, accessor.parameters)}.${accessor.displayName};';
+
+      }
+      addMember(displayName, code);
+    }
+
+    for (final method in templateElement.methods) {
+      if (isMemberAlreadyDefined(clazz, method.displayName)) continue;
+      if (excludes.contains(method.displayName)) continue;
+
+      final requiredParameters = method.parameters.where((p) => p.parameterKind
+          == ParameterKind.REQUIRED);
+      String parametersDeclaration = requiredParameters.map(
+          substituteTypeToGeneric).join(', ');
+      String parametersCall = requiredParameters.map((e) => e.name).join(', ');
+
+      final optionalPositionalParameters = method.parameters.where((p) =>
+          p.parameterKind == ParameterKind.POSITIONAL);
+      if (optionalPositionalParameters.isNotEmpty) {
+        if (requiredParameters.isNotEmpty) {
+          parametersDeclaration += ', ';
+          parametersCall += ', ';
+        }
+        parametersDeclaration += '[';
+        parametersDeclaration += optionalPositionalParameters.map(
+            substituteTypeToGeneric).map((s) => s.substring(1, s.length - 1)).join(', ');
+        parametersDeclaration += ']';
+        parametersCall += optionalPositionalParameters.map((e) => e.name).join(
+            ', ');
+      }
+
+      final optionalNamedParameters = method.parameters.where((p) =>
+          p.parameterKind == ParameterKind.NAMED);
+      if (optionalNamedParameters.isNotEmpty) {
+        if (requiredParameters.isNotEmpty) {
+          parametersDeclaration += ', ';
+          parametersCall += ', ';
+        }
+        parametersDeclaration += '{';
+        parametersDeclaration += optionalNamedParameters.map(
+            substituteTypeToGeneric).map((s) => s.substring(1, s.length - 1)).join(', ');
+        parametersDeclaration += '}';
+        parametersCall += optionalNamedParameters.map((e) =>
+            '${e.name}: ${e.name}').join(', ');
+      }
+
+      final returnType = method.returnType;
+      String methodSignature = '${method.displayName}($parametersDeclaration)';
+      String delegateCall =
+          '${mayPrefixByThis(targetName, method.parameters)}.${method.displayName}($parametersCall)';
+      if (method.isOperator) {
+        methodSignature =
+            'operator ${method.displayName}($parametersDeclaration)';
+        delegateCall =
+            '${mayPrefixByThis(targetName, method.parameters)} ${method.displayName} $parametersCall';
+        if (method.displayName == '[]') {
+          final parameter = requiredParameters.map((e) => e.name).first;
+          delegateCall =
+              '${mayPrefixByThis(targetName, method.parameters)}[$parameter]';
+        }
+        if (method.displayName == '[]=') {
+          final parameters = requiredParameters.map((e) => e.name).toList();
+          delegateCall =
+              '${mayPrefixByThis(targetName, method.parameters)}[${parameters[0]}] = ${parameters[1]}';
+        }
+      }
+
+      String code = '@generated ';
+      if (returnType.isVoid) {
+        code += 'void $methodSignature { $delegateCall; }';
+      } else {
+        code +=
+            '${substituteTypeToGeneric(returnType.element)} $methodSignature => $delegateCall;';
+      }
+      addMember(method.displayName, code);
+    }
+
+    // go to inherited types
+    final inheritedTypes = [];
+    inheritedTypes.addAll(templateElement.interfaces);
+    inheritedTypes.addAll(templateElement.mixins);
+    inheritedTypes.add(templateElement.supertype);
+    inheritedTypes.forEach((interfaceType) {
+      if (interfaceType == null) return;
+      handleTemplate(clazz, targetName, interfaceType.element,
+          interfaceType.typeArguments.map((t) => t.displayName).toList(), excludes,
+          addMember);
+    });
+  }
+
+  String substituteTypeToGeneric(List<TypeParameterElement>
+      classTypeParameters, List<String> typeArguments, Element e) {
+    String substituteTypeParameterToGeneric(TypeParameterElement e) {
+      final index = classTypeParameters.indexOf(e.type.element);
+      if (typeArguments == null) {
+        if (e.type.element.bound == null) return 'dynamic';
+        return e.type.element.bound.displayName;
+      }
+      return typeArguments[index];
+    }
+    if (e is ParameterElement && e.type.element is TypeParameterElement) {
+      return substituteTypeParameterToGeneric(e.type.element) + ' ' + e.name;
+    }
+    if (e is TypeParameterElement) {
+      return substituteTypeParameterToGeneric(e);
+    }
+    return e.toString();
   }
 
   mayPrefixByThis(String targetName, List<ParameterElement> parameters) =>
@@ -400,18 +429,19 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
     final NamedExpression excludePart = delegate.arguments.arguments.firstWhere(
         (e) => e is NamedExpression && e.name.label.name == 'exclude', orElse: () =>
         null);
+    final excludes = DELEGATE_EXCLUDES.toList();
     if (excludePart != null) {
-      return (excludePart.expression as ListLiteral).elements.map((SymbolLiteral
-          sl) => sl.toString().substring(sl.poundSign.length)).toList();
+      excludes.addAll((excludePart.expression as ListLiteral).elements.map(
+          (SymbolLiteral sl) => sl.toString().substring(sl.poundSign.length)));
     }
-    return [];
+    return excludes;
   }
 }
 
 isMemberAlreadyDefined(ClassDeclaration clazz, String name) =>
-    clazz.members.any((m) => (m is MethodDeclaration && m.name.name == name) || (m
-    is FieldDeclaration && m.fields.variables.any((f) => f.name.name == name)) || (m
-    is ConstructorDeclaration && m.name.name == name));
+    clazz.members.any((m) => (m is MethodDeclaration && m.name.name + (m.isSetter ?
+    '=' : '') == name) || (m is FieldDeclaration && m.fields.variables.any((f) =>
+    f.name.name == name)) || (m is ConstructorDeclaration && m.name.name == name));
 
 Iterable<String> getFieldNames(ClassDeclaration clazz) => clazz.members.where(
     (m) => m is FieldDeclaration && !m.isStatic).expand((FieldDeclaration f) =>
