@@ -38,7 +38,7 @@ class A {
   int b;
   A();
   @generated @override int get hashCode => hashObjects([a, b]);
-  @generated @override bool operator ==(o) => o is A && o.a == a && o.b == b;
+  @generated @override bool operator ==(o) => identical(this, o) || o is A && o.a == a && o.b == b;
 }
 '''
       );
@@ -64,7 +64,7 @@ class A {
   int b;
   int get hashCode => 1;
   A();
-  @generated @override bool operator ==(o) => o is A && o.a == a && o.b == b;
+  @generated @override bool operator ==(o) => identical(this, o) || o is A && o.a == a && o.b == b;
 }
 '''
       );
@@ -85,7 +85,7 @@ class A {
   var a, _b;
   A();
   @generated @override int get hashCode => hashObjects([a]);
-  @generated @override bool operator ==(o) => o is A && o.a == a;
+  @generated @override bool operator ==(o) => identical(this, o) || o is A && o.a == a;
 }
 '''
       );
@@ -106,7 +106,7 @@ class A {
   var a, _b;
   A();
   @generated @override int get hashCode => hashObjects([a, _b]);
-  @generated @override bool operator ==(o) => o is A && o.a == a && o._b == _b;
+  @generated @override bool operator ==(o) => identical(this, o) || o is A && o.a == a && o._b == _b;
 }
 '''
       );
@@ -131,7 +131,7 @@ class B extends A {
   final String d;
   B(this.c, this.d);
   @generated @override int get hashCode => hashObjects([super.hashCode, c, d]);
-  @generated @override bool operator ==(o) => o is B && super == o && o.c == c && o.d == d;
+  @generated @override bool operator ==(o) => identical(this, o) || o is B && super == o && o.c == c && o.d == d;
 }
 '''
       );
@@ -157,7 +157,7 @@ class C extends A {
   final String d;
   C(this.c, this.d);
   @generated @override int get hashCode => hashObjects([c, d]);
-  @generated @override bool operator ==(o) => o is C && o.c == c && o.d == d;
+  @generated @override bool operator ==(o) => identical(this, o) || o is C && o.c == c && o.d == d;
 }
 '''
       );
@@ -185,7 +185,29 @@ class D {
   String c, d;
   D();
   @generated @override int get hashCode => hashObjects([a, c]);
-  @generated @override bool operator ==(o) => o is D && o.a == a && o.c == c;
+  @generated @override bool operator ==(o) => identical(this, o) || o is D && o.a == a && o.c == c;
+}
+'''
+      );
+
+  testTransformation(
+      '@EqualsAndHashCode() should be ok with generics',
+      r'''
+import 'package:zengen/zengen.dart';
+@EqualsAndHashCode()
+class A<T> {
+  T a;
+  A();
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+@EqualsAndHashCode()
+class A<T> {
+  T a;
+  A();
+  @generated @override int get hashCode => hashObjects([a]);
+  @generated @override bool operator ==(o) => identical(this, o) || o is A<T> && o.a == a;
 }
 '''
       );
