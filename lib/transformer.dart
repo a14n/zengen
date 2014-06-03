@@ -302,6 +302,7 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
 
     for (final accessor in templateElement.accessors) {
       final displayName = accessor.displayName + (accessor.isSetter ? '=' : '');
+      if (accessor.isPrivate) continue;
       if (isMemberAlreadyDefined(clazz, displayName)) continue;
       if (excludes.contains(displayName)) continue;
 
@@ -319,6 +320,7 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
     }
 
     for (final method in templateElement.methods) {
+      if (method.isPrivate) continue;
       if (isMemberAlreadyDefined(clazz, method.displayName)) continue;
       if (excludes.contains(method.displayName)) continue;
 

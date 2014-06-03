@@ -20,7 +20,8 @@ import 'package:unittest/unittest.dart';
 
 import 'package:zengen/transformer.dart';
 
-void testTransformation(String spec, String source, String expectedContent, {solo: false}) {
+void testTransformation(String spec, String source, String
+    expectedContent, {solo: false}) {
   final t = solo ? solo_test : test;
   t(spec, () => transformContent(source).then((content) {
     expect(content, expectedContent);
@@ -82,9 +83,13 @@ class _MockTransform implements Transform {
 
   readInput(id) => throw new UnimplementedError();
   Future<String> readInputAsString(AssetId id, {encoding}) {
-    return ins.firstWhere((a) => a.id == id, orElse: () => new Asset.fromPath(
-        id, 'packages/${id.package}/${id.path.substring('lib/'.length)}')).readAsString(
-        );
+    return ins.firstWhere((a) => a.id == id, orElse: () {
+      final libAssetId = new AssetId(id.package, id.path.substring('lib/'.length
+          ));
+      return ins.firstWhere((a) => a.id == libAssetId, orElse: () =>
+          new Asset.fromPath(libAssetId,
+          'packages/${libAssetId.package}/${libAssetId.path}'));
+    }).readAsString();
   }
   Future<bool> hasInput(id) => new Future.value(ins.any((a) => a.id == id));
 

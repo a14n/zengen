@@ -441,4 +441,28 @@ class C {
 }
 '''
       );
+
+  testTransformation('@Delegate() should not create private member',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A {
+  m1();
+  _m2();
+}
+class B {
+  @Delegate() A _a;
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A {
+  m1();
+  _m2();
+}
+class B {
+  @Delegate() A _a;
+  @generated dynamic m1() => _a.m1();
+}
+'''
+      );
 }
