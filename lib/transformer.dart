@@ -148,8 +148,11 @@ class ToStringAppender implements ContentModifier {
       final callSuper = annotation.callSuper == true;
       final exclude = (annotation.exclude == null ? [] :
           annotation.exclude)..add('hashCode');
+      final includePrivate = annotation.includePrivate == true;
+
       final getters = clazz.element.accessors.where((e) => e.isGetter &&
-          !e.isStatic).map((e) => e.name).where((e) => !exclude.contains(e));
+          !e.isStatic && (includePrivate || !e.isPrivate)).map((e) => e.name).where((e) =>
+          !exclude.contains(e));
 
       final toString = '@generated @override String toString() => '
           '"${clazz.name.name}(' + //
@@ -171,8 +174,9 @@ class ToStringAppender implements ContentModifier {
 
     if (annotation == null) return null;
 
-    bool callSuper = null;
-    List<Symbol> exclude = null;
+    bool callSuper;
+    List<Symbol> exclude;
+    bool includePrivate;
 
     final NamedExpression callSuperPart =
         annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
@@ -189,7 +193,15 @@ class ToStringAppender implements ContentModifier {
           (SymbolLiteral sl) => sl.toString().substring(sl.poundSign.length)).toList();
     }
 
-    return new ToString(callSuper: callSuper, exclude: exclude);
+    final NamedExpression includePrivatePart =
+        annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
+        e.name.label.name == 'includePrivate', orElse: () => null);
+    if (includePrivatePart != null) {
+      includePrivate = (includePrivatePart.expression as BooleanLiteral).value;
+    }
+
+    return new ToString(callSuper: callSuper, exclude: exclude, includePrivate:
+        includePrivate);
   }
 }
 
@@ -204,8 +216,11 @@ class EqualsAndHashCodeAppender implements ContentModifier {
       final callSuper = annotation.callSuper == true;
       final exclude = (annotation.exclude == null ? [] :
           annotation.exclude)..add('hashCode');
+      final includePrivate = annotation.includePrivate == true;
+
       final getters = clazz.element.accessors.where((e) => e.isGetter &&
-          !e.isStatic).map((e) => e.name).where((e) => !exclude.contains(e));
+          !e.isStatic && (includePrivate || !e.isPrivate)).map((e) => e.name).where((e) =>
+          !exclude.contains(e));
 
       final hashCodeValues = getters.toList();
       if (callSuper) hashCodeValues.insert(0, 'super.hashCode');
@@ -234,8 +249,9 @@ class EqualsAndHashCodeAppender implements ContentModifier {
 
     if (annotation == null) return null;
 
-    bool callSuper = null;
-    List<Symbol> exclude = null;
+    bool callSuper;
+    List<Symbol> exclude;
+    bool includePrivate;
 
     final NamedExpression callSuperPart =
         annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
@@ -252,7 +268,15 @@ class EqualsAndHashCodeAppender implements ContentModifier {
           (SymbolLiteral sl) => sl.toString().substring(sl.poundSign.length)).toList();
     }
 
-    return new EqualsAndHashCode(callSuper: callSuper, exclude: exclude);
+    final NamedExpression includePrivatePart =
+        annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
+        e.name.label.name == 'includePrivate', orElse: () => null);
+    if (includePrivatePart != null) {
+      includePrivate = (includePrivatePart.expression as BooleanLiteral).value;
+    }
+
+    return new EqualsAndHashCode(callSuper: callSuper, exclude: exclude,
+        includePrivate: includePrivate);
   }
 }
 

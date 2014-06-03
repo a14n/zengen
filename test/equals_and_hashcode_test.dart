@@ -69,6 +69,48 @@ class A {
 '''
       );
 
+  testTransformation('@EqualsAndHashCode() should not use private accessors',
+      r'''
+import 'package:zengen/zengen.dart';
+@EqualsAndHashCode()
+class A {
+  var a, _b;
+  A();
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+@EqualsAndHashCode()
+class A {
+  var a, _b;
+  A();
+  @generated @override int get hashCode => hashObjects([a]);
+  @generated @override bool operator ==(o) => o is A && o.a == a;
+}
+'''
+      );
+
+  testTransformation('@EqualsAndHashCode(includePrivate: true) should use private accessors',
+      r'''
+import 'package:zengen/zengen.dart';
+@EqualsAndHashCode(includePrivate: true)
+class A {
+  var a, _b;
+  A();
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+@EqualsAndHashCode(includePrivate: true)
+class A {
+  var a, _b;
+  A();
+  @generated @override int get hashCode => hashObjects([a, _b]);
+  @generated @override bool operator ==(o) => o is A && o.a == a && o._b == _b;
+}
+'''
+      );
+
   testTransformation('@EqualsAndHashCode(callSuper: true) should call super',
       r'''
 import 'package:zengen/zengen.dart';

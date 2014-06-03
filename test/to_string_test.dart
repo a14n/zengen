@@ -67,6 +67,46 @@ class A {
 '''
       );
 
+  testTransformation('@ToString() should not use private accessors',
+      r'''
+import 'package:zengen/zengen.dart';
+@ToString()
+class A {
+  var a, _b;
+  A();
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+@ToString()
+class A {
+  var a, _b;
+  A();
+  @generated @override String toString() => "A(a=$a)";
+}
+'''
+      );
+
+  testTransformation('@ToString(includePrivate: true) should use private accessors',
+      r'''
+import 'package:zengen/zengen.dart';
+@ToString(includePrivate: true)
+class A {
+  var a, _b;
+  A();
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+@ToString(includePrivate: true)
+class A {
+  var a, _b;
+  A();
+  @generated @override String toString() => "A(a=$a, _b=$_b)";
+}
+'''
+      );
+
   testTransformation('@ToString(callSuper: true) should call super',
       r'''
 import 'package:zengen/zengen.dart';

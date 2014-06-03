@@ -21,13 +21,15 @@ const generated = null;
 class ToString {
   final bool callSuper;
   final List<Symbol> exclude;
-  const ToString({this.callSuper, this.exclude});
+  final bool includePrivate;
+  const ToString({this.callSuper, this.exclude, this.includePrivate});
 }
 
 class EqualsAndHashCode {
   final bool callSuper;
   final List<Symbol> exclude;
-  const EqualsAndHashCode({this.callSuper, this.exclude});
+  final bool includePrivate;
+  const EqualsAndHashCode({this.callSuper, this.exclude, this.includePrivate});
 }
 
 class Delegate {
