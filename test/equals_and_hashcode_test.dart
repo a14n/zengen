@@ -43,6 +43,32 @@ class A {
 '''
       );
 
+  testTransformation('@EqualsAndHashCode() should not use hashCode getter',
+      r'''
+import 'package:zengen/zengen.dart';
+@EqualsAndHashCode()
+class A {
+  static var s;
+  var a;
+  int b;
+  int get hashCode => 1;
+  A();
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+@EqualsAndHashCode()
+class A {
+  static var s;
+  var a;
+  int b;
+  int get hashCode => 1;
+  A();
+  @generated @override bool operator ==(o) => o is A && o.a == a && o.b == b;
+}
+'''
+      );
+
   testTransformation('@EqualsAndHashCode(callSuper: true) should call super',
       r'''
 import 'package:zengen/zengen.dart';

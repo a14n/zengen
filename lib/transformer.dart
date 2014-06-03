@@ -146,15 +146,16 @@ class ToStringAppender implements ContentModifier {
         (ClassDeclaration clazz) {
       final annotation = getToString(clazz);
       final callSuper = annotation.callSuper == true;
-      final exclude = annotation.exclude == null ? [] : annotation.exclude;
-      final fieldNames = getFieldNames(clazz).where((f) => !exclude.contains(f)
-          );
+      final exclude = (annotation.exclude == null ? [] :
+          annotation.exclude)..add('hashCode');
+      final getters = clazz.element.accessors.where((e) => e.isGetter &&
+          !e.isStatic).map((e) => e.name).where((e) => !exclude.contains(e));
 
       final toString = '@generated @override String toString() => '
           '"${clazz.name.name}(' + //
       (callSuper ? 'super=\${super.toString()}' : '') + //
-      (callSuper && fieldNames.isNotEmpty ? ', ' : '') + //
-      fieldNames.map((f) => '$f=\$$f').join(', ') + ')";';
+      (callSuper && getters.isNotEmpty ? ', ' : '') + //
+      getters.map((f) => '$f=\$$f').join(', ') + ')";';
 
       final index = clazz.end - 1;
       if (!isMethodDefined(clazz, 'toString')) {
@@ -201,18 +202,19 @@ class EqualsAndHashCodeAppender implements ContentModifier {
         ).forEach((ClassDeclaration clazz) {
       final annotation = getEqualsAndHashCode(clazz);
       final callSuper = annotation.callSuper == true;
-      final exclude = annotation.exclude == null ? [] : annotation.exclude;
-      final fieldNames = getFieldNames(clazz).where((f) => !exclude.contains(f)
-          );
+      final exclude = (annotation.exclude == null ? [] :
+          annotation.exclude)..add('hashCode');
+      final getters = clazz.element.accessors.where((e) => e.isGetter &&
+          !e.isStatic).map((e) => e.name).where((e) => !exclude.contains(e));
 
-      final hashCodeValues = fieldNames.toList();
+      final hashCodeValues = getters.toList();
       if (callSuper) hashCodeValues.insert(0, 'super.hashCode');
       final hashCode = '@generated @override int get hashCode => '
           'hashObjects([' + hashCodeValues.join(', ') + ']);';
 
       final equals = '@generated @override bool operator ==(o) => '
-          'o is ${clazz.name.name}' + (callSuper ? ' && super == o' : '') +
-          fieldNames.map((f) => ' && o.$f == $f').join() + ';';
+          'o is ${clazz.name.name}' + (callSuper ? ' && super == o' : '') + getters.map(
+          (f) => ' && o.$f == $f').join() + ';';
 
       final index = clazz.end - 1;
       if (!isMethodDefined(clazz, 'hashCode')) {
@@ -444,10 +446,6 @@ isMemberAlreadyDefined(ClassDeclaration clazz, String name) =>
     clazz.members.any((m) => (m is MethodDeclaration && m.name.name + (m.isSetter ?
     '=' : '') == name) || (m is FieldDeclaration && m.fields.variables.any((f) =>
     f.name.name == name)) || (m is ConstructorDeclaration && m.name.name == name));
-
-Iterable<String> getFieldNames(ClassDeclaration clazz) => clazz.members.where(
-    (m) => m is FieldDeclaration && !m.isStatic).expand((FieldDeclaration f) =>
-    f.fields.variables.map((v) => v.name.name));
 
 const _LIBRARY_NAME = 'zengen';
 

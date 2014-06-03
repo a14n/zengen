@@ -41,6 +41,32 @@ class A {
 '''
       );
 
+  testTransformation('@ToString() should not use hashCode getter',
+      r'''
+import 'package:zengen/zengen.dart';
+@ToString()
+class A {
+  static var s;
+  var a;
+  int b;
+  int get hashCode => 1;
+  A();
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+@ToString()
+class A {
+  static var s;
+  var a;
+  int b;
+  int get hashCode => 1;
+  A();
+  @generated @override String toString() => "A(a=$a, b=$b)";
+}
+'''
+      );
+
   testTransformation('@ToString(callSuper: true) should call super',
       r'''
 import 'package:zengen/zengen.dart';
