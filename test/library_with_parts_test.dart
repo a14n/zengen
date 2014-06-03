@@ -80,7 +80,7 @@ part of l;
 class P2 {
   int a;
   @generated @override int get hashCode => hashObjects([a]);
-  @generated @override bool operator ==(o) => o is P2 && o.a == a;
+  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a;
 }
 """
               );

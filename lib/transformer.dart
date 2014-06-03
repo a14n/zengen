@@ -229,8 +229,8 @@ class EqualsAndHashCodeAppender implements ContentModifier {
 
       final equals =
           '@generated @override bool operator ==(o) => identical(this, o) || '
-          'o is ${clazz.element}' + (callSuper ? ' && super == o' : '') + getters.map(
-          (f) => ' && o.$f == $f').join() + ';';
+          'o.runtimeType == runtimeType' + (callSuper ? ' && super == o' : '') +
+          getters.map((f) => ' && o.$f == $f').join() + ';';
 
       final index = clazz.end - 1;
       if (!isMethodDefined(clazz, 'hashCode')) {
