@@ -41,7 +41,7 @@ class A {
 }
 ```
 
-The code generated can be customize with the following optional parameters:
+The code generated can be customized with the following optional parameters:
 
 - `callSuper`: if set to `true` the result of `toString` will contains the result of `super.toString()`.
 - `exclude`: a list of field names can be exclude with this argument.
