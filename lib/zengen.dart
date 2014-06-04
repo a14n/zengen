@@ -16,23 +16,46 @@ library zengen;
 
 export 'package:quiver/core.dart' show hashObjects;
 
+/// Marker on generated elements
 const generated = null;
 
+/// Annotation to use on classes to generate the `toString()` method.
+///
+/// By default the public getter are used to generate the code.
+/// You can customize the generated code with [callSuper], [exclude] and [includePrivate].
 class ToString {
+  /// Indicates that the generated code has to use `super.toString()`.
   final bool callSuper;
+  /// Specifies the list of Symbol to not use in the generated code.
   final List<Symbol> exclude;
+  /// Indicates that the generated code has to use also private members.
   final bool includePrivate;
+
   const ToString({this.callSuper, this.exclude, this.includePrivate});
 }
 
+/// Annotation to use on classes to generate the `int get hashCode` getter and the `==` operator.
+///
+/// By default the public getter are used to generate the code.
+/// You can customize the generated code with [callSuper], [exclude] and [includePrivate].
 class EqualsAndHashCode {
+  /// Indicates that the generated code has to use the parent `hashCode` and `==`.
   final bool callSuper;
+  /// Specifies the list of Symbol to not use in the generated code.
   final List<Symbol> exclude;
+  /// Indicates that the generated code has to use also private members.
   final bool includePrivate;
+
   const EqualsAndHashCode({this.callSuper, this.exclude, this.includePrivate});
 }
 
+/// Annotation to use on field/getter to add to the enclosing class all the public methods available on the type of the field/getter.
+///
+/// By default the public accessors and methods are used to generate the code.
+/// You can customize the generated code with [exclude].
 class Delegate {
+  /// Specifies the list of Symbol to not use in the generated code.
   final List<Symbol> exclude;
+
   const Delegate({this.exclude});
 }

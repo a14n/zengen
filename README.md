@@ -2,6 +2,7 @@ ZenGen
 ======
 
 This project provides a [pub transformer](https://www.dartlang.org/tools/pub/glossary.html#transformer) to generate boilerplate code.
+
 This library is inspired from the [project Lombok](http://projectlombok.org) in the Java world.
 
 ## Warning ##
@@ -16,7 +17,7 @@ If you run a server app launch the built version of your dart file after a `pub 
 
 ### @ToString() ###
 
-Annotating a class with `@ToString()` will generate an implementation of `String toString()`.
+Annotating a class with `@ToString()` will generate an implementation of `String toString()` built by default with its public getters.
 
 For instance :
 
@@ -44,11 +45,12 @@ class A {
 The code generated can be customized with the following optional parameters:
 
 - `callSuper`: if set to `true` the result of `toString` will contains the result of `super.toString()`.
-- `exclude`: a list of field names can be exclude with this argument.
+- `exclude`: a list of getter names can be exclude with this argument.
+- `includePrivate`: if set to `true` the generation will include private getters.
 
 ### @EqualsAndHashCode() ###
 
-Annotating a class with `@EqualsAndHashCode()` will generate an implementation of `bool operator ==(o)` and `int get hashCode`.
+Annotating a class with `@EqualsAndHashCode()` will generate an implementation of `bool operator ==(o)` and `int get hashCode` built by default with its public getters.
 
 For instance :
 
@@ -77,7 +79,41 @@ class A {
 The code generated can be customize with the following optional parameters:
 
 - `callSuper`: if set to `true` the generated code will use additionnally `super.hashCode` and `super == o`.
-- `exclude`: a list of field names can be exclude with this argument.
+- `exclude`: a list of getter names can be exclude with this argument.
+- `includePrivate`: if set to `true` the generation will include private getters.
+
+### @Delegate() ###
+
+Annotating a field/getter with `@Delegate()` will add to the enclosing class all the public methods available on the type of the field/getter.
+
+For instance :
+
+```dart
+import 'package:zengen/zengen.dart';
+abstract class A {
+  m1();
+}
+class B {
+  @Delegate() A _a;
+}
+```
+
+will be transformed to :
+
+```dart
+import 'package:zengen/zengen.dart';
+abstract class A {
+  m1();
+}
+class B {
+  @Delegate() A _a;
+  @generated dynamic m1() => _a.m1();
+}
+```
+
+The code generated can be customize with the following optional parameters:
+
+- `exclude`: a list of members can be exclude with this argument.
 
 ## Usage ##
 To use this library in your code :
