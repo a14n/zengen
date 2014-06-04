@@ -70,7 +70,7 @@ class A {
   final int b;
   A(this.a, this.b);
   @generated @override int get hashCode => hashObjects([a, b]);
-  @generated @override bool operator ==(o) => o is A && o.a == a && o.b == b;
+  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a && o.b == b;
 }
 ```
 
