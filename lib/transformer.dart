@@ -310,9 +310,12 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
     for (final delegate in delegates) {
       final excludes = getExcludes(delegate);
       final ClassElement templateElement = typeName.type.element;
-      handleTemplate(clazz, targetName, templateElement, typeName.typeArguments
-          == null ? null : typeName.typeArguments.arguments.map((e) => e.name.name
-          ).toList(), excludes, (displayName, code) {
+      final genericsMapping = typeName.typeArguments == null ? <String, String>
+          {} : new Map<String, String>.fromIterables(templateElement.typeParameters.map(
+          (e) => e.displayName), typeName.typeArguments.arguments.map((e) => e.name.name)
+          );
+      handleTemplate(clazz, targetName, templateElement, genericsMapping,
+          excludes, (displayName, code) {
         excludes.add(displayName);
         transformations.add(new Transformation.insertion(index, '  $code\n'));
       });
@@ -320,12 +323,13 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
   }
 
   void handleTemplate(ClassDeclaration clazz, String targetName, ClassElement
-      templateElement, List<String> typeArguments, List<String> excludes, void
-      addMember(String displayName, String code)) {
-    final classTypeParameters = templateElement.typeParameters;
+      templateElement, Map<String, String> genericsMapping, List<String>
+      excludes, void addMember(String displayName, String code)) {
 
-    substituteTypeToGeneric(Element e) => this.substituteTypeToGeneric(
-        classTypeParameters, typeArguments, e);
+    substituteTypeToGeneric(DartType e) => this.substituteTypeToGeneric(
+        genericsMapping, e);
+    substituteParameterToGeneric(ParameterElement e) =>
+        this.substituteTypeToGeneric(genericsMapping, e.type) + ' ' + e.name;
 
     for (final accessor in templateElement.accessors) {
       final displayName = accessor.displayName + (accessor.isSetter ? '=' : '');
@@ -337,10 +341,10 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
       if (accessor.isSetter) {
         if (accessor.returnType.isVoid) code += 'void ';
         code +=
-            'set ${accessor.displayName}(${substituteTypeToGeneric(accessor.parameters.first)}) { ${mayPrefixByThis(targetName, accessor.parameters)}.${accessor.displayName} = ${accessor.parameters.first.name}; }';
+            'set ${accessor.displayName}(${substituteParameterToGeneric(accessor.parameters.first)}) { ${mayPrefixByThis(targetName, accessor.parameters)}.${accessor.displayName} = ${accessor.parameters.first.name}; }';
       } else if (accessor.isGetter) {
         code +=
-            '${substituteTypeToGeneric(accessor.returnType.element)} get ${accessor.displayName} => ${mayPrefixByThis(targetName, accessor.parameters)}.${accessor.displayName};';
+            '${substituteTypeToGeneric(accessor.returnType)} get ${accessor.displayName} => ${mayPrefixByThis(targetName, accessor.parameters)}.${accessor.displayName};';
 
       }
       addMember(displayName, code);
@@ -354,7 +358,7 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
       final requiredParameters = method.parameters.where((p) => p.parameterKind
           == ParameterKind.REQUIRED);
       String parametersDeclaration = requiredParameters.map(
-          substituteTypeToGeneric).join(', ');
+          substituteParameterToGeneric).join(', ');
       String parametersCall = requiredParameters.map((e) => e.name).join(', ');
 
       final optionalPositionalParameters = method.parameters.where((p) =>
@@ -366,7 +370,7 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
         }
         parametersDeclaration += '[';
         parametersDeclaration += optionalPositionalParameters.map(
-            substituteTypeToGeneric).map((s) => s.substring(1, s.length - 1)).join(', ');
+            substituteParameterToGeneric).join(', ');
         parametersDeclaration += ']';
         parametersCall += optionalPositionalParameters.map((e) => e.name).join(
             ', ');
@@ -381,7 +385,7 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
         }
         parametersDeclaration += '{';
         parametersDeclaration += optionalNamedParameters.map(
-            substituteTypeToGeneric).map((s) => s.substring(1, s.length - 1)).join(', ');
+            substituteParameterToGeneric).join(', ');
         parametersDeclaration += '}';
         parametersCall += optionalNamedParameters.map((e) =>
             '${e.name}: ${e.name}').join(', ');
@@ -413,42 +417,48 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
         code += 'void $methodSignature { $delegateCall; }';
       } else {
         code +=
-            '${substituteTypeToGeneric(returnType.element)} $methodSignature => $delegateCall;';
+            '${substituteTypeToGeneric(returnType)} $methodSignature => $delegateCall;';
       }
       addMember(method.displayName, code);
     }
 
     // go to inherited types
-    final inheritedTypes = [];
+    final inheritedTypes = <InterfaceType>[];
     inheritedTypes.addAll(templateElement.interfaces);
     inheritedTypes.addAll(templateElement.mixins);
     inheritedTypes.add(templateElement.supertype);
     inheritedTypes.forEach((interfaceType) {
       if (interfaceType == null) return;
+      final newGenericsMapping = new Map<String, String>.fromIterable(
+          new Iterable.generate(interfaceType.element.typeParameters.length), key: (int i)
+          => interfaceType.element.typeParameters[i].name, value: (int i) {
+        final t = interfaceType.typeArguments[i];
+        return t is TypeParameterType ? genericsMapping[t.name] : t.name;
+      });
       handleTemplate(clazz, targetName, interfaceType.element,
-          interfaceType.typeArguments.map((t) => t.displayName).toList(), excludes,
-          addMember);
+          newGenericsMapping, excludes, addMember);
     });
   }
 
-  String substituteTypeToGeneric(List<TypeParameterElement>
-      classTypeParameters, List<String> typeArguments, Element e) {
-    String substituteTypeParameterToGeneric(TypeParameterElement e) {
-      final index = classTypeParameters.indexOf(e.type.element);
-      if (typeArguments == null) {
-        if (e.type.element.bound == null) return 'dynamic';
-        return e.type.element.bound.displayName;
+  String substituteTypeToGeneric(Map<String, String> genericsMapping, DartType
+      e) {
+    if (e is InterfaceType) {
+      if (e.typeParameters.isNotEmpty) {
+        final types = e.typeArguments.map((e) => substituteTypeToGeneric(
+            genericsMapping, e));
+        return '${e.name}<${types.join(', ')}>';
+      } else {
+        return e.name;
       }
-      return typeArguments[index];
     }
-    if (e is ParameterElement && e.type.element is TypeParameterElement) {
-      return substituteTypeParameterToGeneric(e.type.element) + ' ' + e.name;
+    if (e is TypeParameterType) {
+      if (genericsMapping[e.name] != null) return genericsMapping[e.name];
+      if (e.element.bound == null) return 'dynamic';
+      return e.element.bound.displayName;
     }
-    if (e is TypeParameterElement) {
-      return substituteTypeParameterToGeneric(e);
-    }
-    return e.toString();
+    return e.name;
   }
+
 
   mayPrefixByThis(String targetName, List<ParameterElement> parameters) =>
       parameters.map((p) => p.displayName).any((name) => name == targetName) ?

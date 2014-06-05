@@ -186,7 +186,7 @@ class B {
 '''
       );
 
-  testTransformation('@Delegate() should handle generics 1',
+  testTransformation('@Delegate() should handle simple generics',
       r'''
 import 'package:zengen/zengen.dart';
 abstract class A<E> {
@@ -208,7 +208,7 @@ class B<E> {
 '''
       );
 
-  testTransformation('@Delegate() should handle generics 2',
+  testTransformation('@Delegate() should handle generics substitution',
       r'''
 import 'package:zengen/zengen.dart';
 abstract class A<E> {
@@ -226,6 +226,35 @@ abstract class A<E> {
 class B {
   @Delegate() A<String> _a;
   @generated String m1(String e) => _a.m1(e);
+}
+'''
+      );
+
+  testTransformation(
+      '@Delegate() should handle generics substitution in generic types',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A<E> {
+  Iterable<E> m1(E e);
+  Iterable<Iterable<E>> m2(Iterable<E> e);
+  Iterable<Iterable<Iterable<E>>> m3(Iterable<Iterable<E>> e);
+}
+class B {
+  @Delegate() A<String> _a;
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A<E> {
+  Iterable<E> m1(E e);
+  Iterable<Iterable<E>> m2(Iterable<E> e);
+  Iterable<Iterable<Iterable<E>>> m3(Iterable<Iterable<E>> e);
+}
+class B {
+  @Delegate() A<String> _a;
+  @generated Iterable<String> m1(String e) => _a.m1(e);
+  @generated Iterable<Iterable<String>> m2(Iterable<String> e) => _a.m2(e);
+  @generated Iterable<Iterable<Iterable<String>>> m3(Iterable<Iterable<String>> e) => _a.m3(e);
 }
 '''
       );
@@ -334,7 +363,7 @@ class B {
 '''
       );
 
-  testTransformation('@Delegate() should handle operators',
+  testTransformation('@Delegate() should avoid setter',
       r'''
 import 'package:zengen/zengen.dart';
 class A {
