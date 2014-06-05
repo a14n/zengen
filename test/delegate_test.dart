@@ -259,6 +259,28 @@ class B {
 '''
       );
 
+  testTransformation('@Delegate() should handle generics functions',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A<E> {
+  m1(Iterable<E> f(Iterable<E> p1, E p2));
+}
+class B {
+  @Delegate() A<String> _a;
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A<E> {
+  m1(Iterable<E> f(Iterable<E> p1, E p2));
+}
+class B {
+  @Delegate() A<String> _a;
+  @generated dynamic m1(Iterable<String> f(Iterable<String> p1, String p2)) => _a.m1(f);
+}
+''',
+      solo: false);
+
   testTransformation(
       '@Delegate() should handle generics with type specifications',
       r'''

@@ -310,10 +310,10 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
     for (final delegate in delegates) {
       final excludes = getExcludes(delegate);
       final ClassElement templateElement = typeName.type.element;
-      final genericsMapping = typeName.typeArguments == null ? <String, String>
-          {} : new Map<String, String>.fromIterables(templateElement.typeParameters.map(
-          (e) => e.displayName), typeName.typeArguments.arguments.map((e) => e.name.name)
-          );
+      final genericsMapping = typeName.typeArguments == null ? <DartType,
+          DartType> {} : new Map<DartType, DartType>.fromIterables(
+          templateElement.typeParameters.map((e) => e.type),
+          typeName.typeArguments.arguments.map((e) => e.type));
       handleTemplate(clazz, targetName, templateElement, genericsMapping,
           excludes, (displayName, code) {
         excludes.add(displayName);
@@ -323,13 +323,57 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
   }
 
   void handleTemplate(ClassDeclaration clazz, String targetName, ClassElement
-      templateElement, Map<String, String> genericsMapping, List<String>
+      templateElement, Map<DartType, DartType> genericsMapping, List<String>
       excludes, void addMember(String displayName, String code)) {
 
-    substituteTypeToGeneric(DartType e) => this.substituteTypeToGeneric(
-        genericsMapping, e);
-    substituteParameterToGeneric(ParameterElement e) =>
-        this.substituteTypeToGeneric(genericsMapping, e.type) + ' ' + e.name;
+    String formatFunction(FunctionType type, String name) {
+      f(ParameterElement p) => p.type is FunctionType ? formatFunction(p.type,
+          p.name) : '${p.type} ${p.name}';
+      String result = '${type.returnType.displayName} ${name}(';
+
+      final requiredParameters = type.parameters.where((p) => p.parameterKind ==
+          ParameterKind.REQUIRED);
+      final optionalPositionalParameters = type.parameters.where((p) =>
+          p.parameterKind == ParameterKind.POSITIONAL);
+      final optionalNamedParameters = type.parameters.where((p) =>
+          p.parameterKind == ParameterKind.NAMED);
+
+      result += requiredParameters.map(f).join(', ');
+
+      if (optionalPositionalParameters.isNotEmpty) {
+        if (requiredParameters.isNotEmpty) result += ', ';
+        result += '[';
+        result += optionalPositionalParameters.map(f).join(', ');
+        result += ']';
+      }
+
+      if (optionalNamedParameters.isNotEmpty) {
+        if (requiredParameters.isNotEmpty) result += ', ';
+        result += '{';
+        result += optionalNamedParameters.map(f).join(', ');
+        result += '}';
+      }
+
+      result += ')';
+      return result;
+    }
+    String substituteTypeToGeneric(DartType e) {
+      final type = this.substituteTypeToGeneric(genericsMapping, e);
+      if (type is FunctionType) {
+        //return formatFunction(type);
+        throw 'No name for function';
+      } else {
+        return type.displayName;
+      }
+    }
+    String substituteParameterToGeneric(ParameterElement e) {
+      final type = this.substituteTypeToGeneric(genericsMapping, e.type);
+      if (e.type is FunctionType) {
+        return formatFunction(type, e.name);
+      } else {
+        return type.displayName + ' ' + e.name;
+      }
+    }
 
     for (final accessor in templateElement.accessors) {
       final displayName = accessor.displayName + (accessor.isSetter ? '=' : '');
@@ -429,34 +473,45 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
     inheritedTypes.add(templateElement.supertype);
     inheritedTypes.forEach((interfaceType) {
       if (interfaceType == null) return;
-      final newGenericsMapping = new Map<String, String>.fromIterable(
+      final newGenericsMapping = new Map<DartType, DartType>.fromIterable(
           new Iterable.generate(interfaceType.element.typeParameters.length), key: (int i)
-          => interfaceType.element.typeParameters[i].name, value: (int i) {
+          => interfaceType.element.typeParameters[i].type, value: (int i) {
         final t = interfaceType.typeArguments[i];
-        return t is TypeParameterType ? genericsMapping[t.name] : t.name;
+        return t is TypeParameterType ? genericsMapping[t] : t;
       });
       handleTemplate(clazz, targetName, interfaceType.element,
           newGenericsMapping, excludes, addMember);
     });
   }
 
-  String substituteTypeToGeneric(Map<String, String> genericsMapping, DartType
-      e) {
-    if (e is InterfaceType) {
-      if (e.typeParameters.isNotEmpty) {
-        final types = e.typeArguments.map((e) => substituteTypeToGeneric(
-            genericsMapping, e));
-        return '${e.name}<${types.join(', ')}>';
+  DartType substituteTypeToGeneric(Map<DartType, DartType>
+      genericsMapping, DartType type) {
+    if (type is InterfaceType) {
+      if (type.typeParameters.isNotEmpty) {
+        final argumentsTypes = type.typeArguments.map((e) =>
+            substituteTypeToGeneric(genericsMapping, e)).toList();
+
+        // http://dartbug.com/19253
+        //        final t = type.substitute4(argumentsTypes);
+        //        return t;
+
+        final newType = new InterfaceTypeImpl.con1(type.element);
+        newType.typeArguments = argumentsTypes;
+        return newType;
       } else {
-        return e.name;
+        return type;
       }
     }
-    if (e is TypeParameterType) {
-      if (genericsMapping[e.name] != null) return genericsMapping[e.name];
-      if (e.element.bound == null) return 'dynamic';
-      return e.element.bound.displayName;
+    if (type is FunctionType) {
+      return type.substitute3(type.typeArguments.map((e) =>
+          substituteTypeToGeneric(genericsMapping, e)).toList());
     }
-    return e.name;
+    if (type is TypeParameterType) {
+      if (genericsMapping[type] != null) return genericsMapping[type];
+      if (type.element.bound == null) return DynamicTypeImpl.instance;
+      return type.element.bound;
+    }
+    return type;
   }
 
 
