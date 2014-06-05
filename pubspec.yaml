@@ -1,12 +1,12 @@
 name: zengen
 description: A transformer to generate boilerplate code.
-version: 0.2.0-dev
+version: 0.2.0
 author: Alexandre Ardhuin <alexandre.ardhuin@gmail.com>
 homepage: https://github.com/a14n/zengen
 dependencies:
   barback: '>=0.13.0 <0.14.0'
   quiver: '>=0.18.2 <0.19.0'
-  code_transformers: any
+  code_transformers: ">=0.1.4+1 <0.2.0"
 dev_dependencies:
   unittest: '>=0.10.0 <0.11.0'
   path: '>=1.1.0 <2.0.0'
