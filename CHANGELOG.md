@@ -1,3 +1,9 @@
+# v0.2.1 (2014-06-07)
+
+## Features
+
+- `@Lazy()`: make field initialization lazy.
+
 # v0.2.0 (2014-06-04)
 
 Now a resolved-AST is used. This has been enforced for the implementation of `@Delegate`

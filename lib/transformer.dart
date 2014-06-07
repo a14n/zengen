@@ -31,6 +31,7 @@ final MODIFIERS = <ContentModifier>[//
   new ToStringAppender(), //
   new EqualsAndHashCodeAppender(), //
   new DelegateAppender(), //
+  new LazyModifier(), //
 ];
 
 abstract class ContentModifier {
@@ -293,13 +294,17 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
   }
 
   @override visitMethodDeclaration(MethodDeclaration node) {
+    super.visitMethodDeclaration(node);
     if (!node.isGetter) return;
     _transform(node, node.parent, node.returnType, node.name.name);
   }
 
   @override
-  visitFieldDeclaration(FieldDeclaration node) => _transform(node, node.parent,
-      node.fields.type, node.fields.variables.first.name.name);
+  visitFieldDeclaration(FieldDeclaration node) {
+    super.visitFieldDeclaration(node);
+    _transform(node, node.parent, node.fields.type,
+        node.fields.variables.first.name.name);
+  }
 
   _transform(Declaration node, ClassDeclaration clazz, TypeName typeName, String
       targetName) {
@@ -532,7 +537,53 @@ class DelegateAppender extends GeneralizingAstVisitor implements ContentModifier
   }
 }
 
-isMemberAlreadyDefined(ClassDeclaration clazz, String name) =>
+class LazyModifier extends GeneralizingAstVisitor implements ContentModifier {
+  final transformations = [];
+
+  @override
+  List<Transformation> accept(CompilationUnitElement unitElement) {
+    transformations.clear();
+    unitElement.unit.visitChildren(this);
+    return transformations;
+  }
+
+  @override visitClassDeclaration(ClassDeclaration clazz) {
+    super.visitClassDeclaration(clazz);
+    if (clazz.members.where((e) => e is FieldDeclaration).every((field) =>
+        getAnnotations(field, 'Lazy').isEmpty)) return;
+    transformations.add(new Transformation.insertion(clazz.end - 1,
+        '  @generated final _lazyFields = <Symbol, dynamic>{};\n'));
+  }
+
+  @override visitFieldDeclaration(FieldDeclaration field) {
+    super.visitFieldDeclaration(field);
+    if (getAnnotations(field, 'Lazy').isEmpty) return;
+    final ClassDeclaration clazz = field.parent;
+    final isFinal = field.fields.isFinal;
+    final type = field.fields.type == null ? 'dynamic' :
+        field.fields.type.toString();
+    for (final variable in field.fields.variables) {
+      final name = variable.name.name;
+      final value = variable.initializer;
+      if (value == null) {
+        throw 'The lazy field $name in $clazz must have an initializer.';
+      }
+      transformations.add(new Transformation.insertion(field.offset,
+          '\n  @generated $type get $name => _lazyFields.putIfAbsent(#$name, () => $value);'
+          ));
+      if (!isFinal) {
+        transformations.add(new Transformation.insertion(field.offset,
+            '\n  @generated set $name($type v) => _lazyFields[#$name] = v;'));
+      }
+    }
+    transformations.add(createRemoveTransformation(field));
+  }
+}
+
+createRemoveTransformation(AstNode node) => new Transformation.deletation(
+    node.offset, node.end);
+
+bool isMemberAlreadyDefined(ClassDeclaration clazz, String name) =>
     clazz.members.any((m) => (m is MethodDeclaration && m.name.name + (m.isSetter ?
     '=' : '') == name) || (m is FieldDeclaration && m.fields.variables.any((f) =>
     f.name.name == name)) || (m is ConstructorDeclaration && m.name.name == name));

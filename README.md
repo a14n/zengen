@@ -115,6 +115,32 @@ The code generated can be customize with the following optional parameters:
 
 - `exclude`: a list of members can be exclude with this argument.
 
+### @Lazy() ###
+
+Annotating a field with `@Lazy()` will make it lazy computed.
+
+For instance :
+
+```dart
+import 'package:zengen/zengen.dart';
+class A {
+  @Lazy() var a = "String";
+}
+```
+
+will be transformed to :
+
+```dart
+import 'package:zengen/zengen.dart';
+class A {
+  @generated dynamic get a => _lazyFields.putIfAbsent(#a, () => "String");
+  @generated set a(dynamic v) => _lazyFields[#a] = v;
+  @generated final _lazyFields = <Symbol, dynamic>{};
+}
+```
+
+The lazy fields are stored into `_lazyFields` by field names. If the field is _final_ no setter will be generated.
+
 ## Usage ##
 To use this library in your code :
 

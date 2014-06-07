@@ -59,3 +59,8 @@ class Delegate {
 
   const Delegate({this.exclude});
 }
+
+/// Annotation to use on fields to make them lazy computed.
+class Lazy {
+  const Lazy();
+}
