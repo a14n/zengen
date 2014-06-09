@@ -17,6 +17,8 @@ import 'equals_and_hashcode_test.dart' as equals_and_hashcode;
 import 'library_with_parts_test.dart' as library_with_parts;
 import 'delegate_test.dart' as delegate;
 import 'lazy_test.dart' as lazy;
+import 'default_constructor_test.dart' as default_constructor;
+import 'value_test.dart' as value;
 
 main() {
   to_string.main();
@@ -24,4 +26,6 @@ main() {
   library_with_parts.main();
   delegate.main();
   lazy.main();
+  default_constructor.main();
+  value.main();
 }

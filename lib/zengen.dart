@@ -64,3 +64,13 @@ class Delegate {
 class Lazy {
   const Lazy();
 }
+
+/// Annotation to use on classes to create a default constructor with uninitialized final fields.
+class DefaultConstructor {
+  const DefaultConstructor();
+}
+
+/// Annotation to use on classes to make them immutable const classes.
+class Value {
+  const Value();
+}

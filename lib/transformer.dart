@@ -28,10 +28,12 @@ const DELEGATE_EXCLUDES = const <String>['hashCode', 'runtimeType', '==',
     'toString', 'noSuchMethod'];
 
 final MODIFIERS = <ContentModifier>[//
+  new DefaultConstructorModifier(), //
   new ToStringAppender(), //
   new EqualsAndHashCodeAppender(), //
   new DelegateAppender(), //
   new LazyModifier(), //
+  new ValueModifier(), //
 ];
 
 abstract class ContentModifier {
@@ -580,13 +582,91 @@ class LazyModifier extends GeneralizingAstVisitor implements ContentModifier {
   }
 }
 
+class DefaultConstructorModifier extends GeneralizingAstVisitor implements
+    ContentModifier {
+  final transformations = [];
+
+  @override
+  List<Transformation> accept(CompilationUnitElement unitElement) {
+    transformations.clear();
+    unitElement.unit.visitChildren(this);
+    return transformations;
+  }
+
+  @override visitClassDeclaration(ClassDeclaration clazz) {
+    super.visitClassDeclaration(clazz);
+    if (getAnnotations(clazz, 'DefaultConstructor').isEmpty) return;
+    if (isMemberAlreadyDefined(clazz, '')) return;
+
+    final Iterable<VariableDeclarationList> fields = clazz.members.where((e) =>
+        e is FieldDeclaration && !e.isStatic).map((e) => e.fields);
+
+    final Iterable<VariableDeclaration> requiredVariables = fields.where((e) =>
+        e.isFinal).expand((e) => e.variables).where((VariableDeclaration e) =>
+        e.initializer == null);
+    final mutableVariables = fields.where((e) => !e.isFinal).expand((e) =>
+        e.variables);
+
+    final useConst = fields.where((e) => !e.isFinal).isEmpty;
+
+    var code = '  @generated ';
+    if (mutableVariables.isEmpty) code += 'const ';
+    code += clazz.name.name + '(';
+    code += requiredVariables.map((e) => 'this.${e.name.name}').join(', ');
+    if (mutableVariables.isNotEmpty) {
+      if (requiredVariables.isNotEmpty) code += ', ';
+      code += '{';
+      code += mutableVariables.map((e) => 'this.${e.name.name}').join(', ');
+      code += '}';
+    }
+    code += ');\n';
+
+    transformations.add(new Transformation.insertion(clazz.end - 1, code));
+  }
+}
+
+class ValueModifier extends GeneralizingAstVisitor implements ContentModifier {
+  final transformations = [];
+
+  @override
+  List<Transformation> accept(CompilationUnitElement unitElement) {
+    transformations.clear();
+    unitElement.unit.visitChildren(this);
+    return transformations;
+  }
+
+  @override visitClassDeclaration(ClassDeclaration clazz) {
+    super.visitClassDeclaration(clazz);
+    if (getAnnotations(clazz, 'Value').isEmpty) return;
+
+    // default constructor
+    if (getAnnotations(clazz, 'DefaultConstructor').isEmpty) {
+      transformations.add(new Transformation.insertion(clazz.offset,
+          '@DefaultConstructor()\n'));
+    }
+
+    // hashCode/==
+    if (getAnnotations(clazz, 'EqualsAndHashCode').isEmpty) {
+      transformations.add(new Transformation.insertion(clazz.offset,
+          '@EqualsAndHashCode()\n'));
+    }
+
+    // toString
+    if (getAnnotations(clazz, 'ToString').isEmpty) {
+      transformations.add(new Transformation.insertion(clazz.offset,
+          '@ToString()\n'));
+    }
+  }
+}
+
 createRemoveTransformation(AstNode node) => new Transformation.deletation(
     node.offset, node.end);
 
 bool isMemberAlreadyDefined(ClassDeclaration clazz, String name) =>
     clazz.members.any((m) => (m is MethodDeclaration && m.name.name + (m.isSetter ?
     '=' : '') == name) || (m is FieldDeclaration && m.fields.variables.any((f) =>
-    f.name.name == name)) || (m is ConstructorDeclaration && m.name.name == name));
+    f.name.name == name)) || (m is ConstructorDeclaration && (m.name == null &&
+    name.isEmpty || m.name != null && m.name.name == name)));
 
 const _LIBRARY_NAME = 'zengen';
 
