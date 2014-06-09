@@ -82,6 +82,64 @@ The code generated can be customize with the following optional parameters:
 - `exclude`: a list of getter names can be exclude with this argument.
 - `includePrivate`: if set to `true` the generation will include private getters.
 
+### @DefaultConstructor() ###
+
+Annotating a class with `@DefaultConstructor()` will generate a default constructor with uninitialized final fields as required parameters and mutable fields as optional named parameters.
+If the class contains only final fields the generated constructor will be a _const_ constructor. 
+
+For instance :
+
+```dart
+@DefaultConstructor()
+class B {
+  var a;
+  final b;
+}
+```
+
+will be transformed to :
+
+```dart
+@DefaultConstructor()
+class B {
+  var a;
+  final b;
+  @generated B(this.b, {this.a});
+}
+```
+
+### @Value() ###
+
+Annotating a class with `@Value()` is the same as annotating the class with `@DefaultConstructor()`, `@EqualsAndHashCode()` and `@ToString()`.
+
+For instance :
+
+```dart
+@Value()
+class A {
+  final int a;
+  final b, c;
+  final List d;
+}
+```
+
+will be transformed to :
+
+```dart
+@Value()
+class A {
+  final int a;
+  final b, c;
+  final List d;
+  @generated const A(this.a, this.b, this.c, this.d);
+  @generated @override String toString() => "A(a=$a, b=$b, c=$c, d=$d)";
+  @generated @override int get hashCode => hashObjects([a, b, c, d]);
+  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a && o.b == b && o.c == c && o.d == d;
+}
+```
+
+Note that you can customize `@EqualsAndHashCode()` and `@ToString()` by using the annotation with the custom parameters.
+
 ### @Delegate() ###
 
 Annotating a field/getter with `@Delegate()` will add to the enclosing class all the public methods available on the type of the field/getter.

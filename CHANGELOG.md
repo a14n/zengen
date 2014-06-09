@@ -1,3 +1,10 @@
+# v0.2.2 (2014-06-09)
+
+## Features
+
+- `@DefaultConstructor()`: generate a default constructor.
+- `@Value()`: simplify the creation of value class.
+
 # v0.2.1 (2014-06-07)
 
 ## Features
