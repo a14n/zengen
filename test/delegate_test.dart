@@ -310,17 +310,20 @@ class B<S> {
   testTransformation('@Delegate() should handle generics with bounds',
       r'''
 import 'package:zengen/zengen.dart';
-abstract class A<S,T extends int> {
+abstract class A<S,T extends num> {
   T m1(S e);
   S m2(T e);
 }
 class B<S> {
   @Delegate() A<S, int> _a;
 }
+class C<T extends num> {
+  @Delegate() A<String, T> _a;
+}
 ''',
       r'''
 import 'package:zengen/zengen.dart';
-abstract class A<S,T extends int> {
+abstract class A<S,T extends num> {
   T m1(S e);
   S m2(T e);
 }
@@ -328,6 +331,11 @@ class B<S> {
   @Delegate() A<S, int> _a;
   @generated int m1(S e) => _a.m1(e);
   @generated S m2(int e) => _a.m2(e);
+}
+class C<T extends num> {
+  @Delegate() A<String, T> _a;
+  @generated T m1(String e) => _a.m1(e);
+  @generated String m2(T e) => _a.m2(e);
 }
 '''
       );

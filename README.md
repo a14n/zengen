@@ -199,6 +199,37 @@ class A {
 
 The lazy fields are stored into `_lazyFields` by field names. If the field is _final_ no setter will be generated.
 
+### @Implementation() ###
+
+Annotating a method with `@Implementation()` will make it the method called by all abstract members.
+The method annotated must have exactly one parameter of type `StringInvocation`.
+This type is the same as `Invocation` from _dart:core_ except that the `Symbol` are replaced by `String`.
+This allows to avoid _dart:mirrors_.
+
+For instance :
+
+```dart
+import 'package:zengen/zengen.dart';
+class A {
+  m1();
+  String get g;
+  void set s(String s);
+  @Implementation() _noSuchMethod(i) => print(i);
+}
+```
+
+will be transformed to :
+
+```dart
+import 'package:zengen/zengen.dart';
+class A {
+  @generated dynamic m1() => _noSuchMethod(new StringInvocation('m1', isMethod: true));
+  @generated String get g => _noSuchMethod(new StringInvocation('g', isGetter: true));
+  @generated void set s(String s) { _noSuchMethod(new StringInvocation('s', isSetter: true, positionalArguments: [s])); }
+  @Implementation() _noSuchMethod(i) => print(i);
+}
+```
+
 ## Usage ##
 To use this library in your code :
 

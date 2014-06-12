@@ -74,3 +74,58 @@ class DefaultConstructor {
 class Value {
   const Value();
 }
+
+/// Annotation to use on a method accepting a [StringInvocation] parameter. This method will be called for every abstract members of the class.
+class Implementation {
+  const Implementation();
+}
+
+/// Same structure as [Invocation] but with [String] instead of [Symbol].
+class StringInvocation {
+  /** The name of the invoked member. */
+  final String memberName;
+
+  /**
+   * An unmodifiable view of the positional arguments of the call.
+   *
+   * If the member is a getter, the positional arguments is empty.
+   */
+  final List positionalArguments;
+
+  /**
+   * An unmodifiable view of the named arguments of the call.
+   *
+   * If the member is a getter, setter or operator, the named arguments
+   * is empty.
+   */
+  final Map<String, dynamic> namedArguments;
+
+  /** Whether the invocation was a method call. */
+  final bool isMethod;
+
+  /**
+   * Whether the invocation was a getter call.
+   * If so, both types of arguments is empty.
+   */
+  final bool isGetter;
+
+  /**
+   * Whether the invocation was a setter call.
+   *
+   * If so, [positionalArguments] has exactly one positonal argument,
+   * and [namedArguments] is empty.
+   */
+  final bool isSetter;
+
+  StringInvocation(this.memberName, {this.isMethod: false, this.isGetter:
+      false, this.isSetter: false, this.positionalArguments: const
+      [], this.namedArguments: const {}});
+
+  /** Whether the invocation was a getter or a setter call. */
+  bool get isAccessor => isGetter || isSetter;
+
+  @override String toString() => "StringInvocation(memberName=$memberName, "
+      "positionalArguments=$positionalArguments, namedArguments=$namedArguments, "
+      "isMethod=$isMethod, isGetter=$isGetter, isSetter=$isSetter, "
+      "isAccessor=$isAccessor)";
+}

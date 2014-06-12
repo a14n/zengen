@@ -1,3 +1,9 @@
+# v0.2.3 (2014-06-12)
+
+## Features
+
+- `@Implementation()`: implementation of all abstract methods.
+
 # v0.2.2 (2014-06-09)
 
 ## Features
