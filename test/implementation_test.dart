@@ -146,6 +146,7 @@ class A {
       r'''
 import 'package:zengen/zengen.dart';
 abstract class I1 {
+  int f1;
   i1();
 }
 abstract class I2 {
@@ -176,6 +177,7 @@ class C extends B with M2, M3<int> implements I2 {
       r'''
 import 'package:zengen/zengen.dart';
 abstract class I1 {
+  int f1;
   i1();
 }
 abstract class I2 {
@@ -204,6 +206,8 @@ class C extends B with M2, M3<int> implements I2 {
   @generated dynamic b1() => _noSuchMethod(new StringInvocation('b1', isMethod: true));
   @generated dynamic a1() => _noSuchMethod(new StringInvocation('a1', isMethod: true));
   @generated dynamic m1() => _noSuchMethod(new StringInvocation('m1', isMethod: true));
+  @generated int get f1 => _noSuchMethod(new StringInvocation('f1', isGetter: true));
+  @generated void set f1(int _f1) { _noSuchMethod(new StringInvocation('f1', isSetter: true, positionalArguments: [_f1])); }
   @generated dynamic i1() => _noSuchMethod(new StringInvocation('i1', isMethod: true));
   @generated dynamic m2() => _noSuchMethod(new StringInvocation('m2', isMethod: true));
   @generated dynamic m3(int t) => _noSuchMethod(new StringInvocation('m3', isMethod: true, positionalArguments: [t]));

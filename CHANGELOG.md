@@ -1,3 +1,9 @@
+# v0.2.4 (2014-06-14)
+
+## Bug Fixes
+
+- @Implementation() doesn't handle field on interface ([#16](https://github.com/a14n/zengen/issues/16)).
+
 # v0.2.3 (2014-06-12)
 
 ## Features

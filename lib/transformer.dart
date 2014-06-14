@@ -592,7 +592,8 @@ class ImplementationModifier extends GeneralizingAstVisitor implements
 
   void handleType(ClassDeclaration clazz, String targetName, ClassElement
       templateElement, Map<DartType, DartType> genericsMapping, List<String>
-      excludes, void addMember(String displayName, String code, [AstNode node])) {
+      excludes, void addMember(String displayName, String code, [AstNode node]), {bool
+      isInterface: false}) {
     String replaceTypeToGeneric(DartType e) {
       final type = substituteTypeToGeneric(genericsMapping, e);
       if (type is FunctionType) {
@@ -620,7 +621,7 @@ class ImplementationModifier extends GeneralizingAstVisitor implements
     for (final accessor in templateElement.accessors) {
       final displayName = accessor.displayName + (accessor.isSetter ? '=' : '');
       if (accessor.isPrivate) continue;
-      if (!accessor.isAbstract) {
+      if (!isInterface && !accessor.isAbstract) {
         excludes.add(displayName);
       }
       //if (isMemberAlreadyDefined(clazz, displayName)) continue;
@@ -644,7 +645,7 @@ class ImplementationModifier extends GeneralizingAstVisitor implements
 
     for (final method in templateElement.methods) {
       if (method.isPrivate) continue;
-      if (!method.isAbstract) {
+      if (!isInterface && !method.isAbstract) {
         excludes.add(method.displayName);
       }
       //if (isMemberAlreadyDefined(clazz, method.displayName)) continue;
@@ -717,7 +718,7 @@ class ImplementationModifier extends GeneralizingAstVisitor implements
 
     // go through inherited types
     // mixins are proceeded after because a parent can implements an abstract method in mixin
-    reapplyWith(InterfaceType interfaceType) {
+    reapplyWith(InterfaceType interfaceType, bool isInterface) {
       if (interfaceType == null) return;
       final newGenericsMapping = new Map<DartType, DartType>.fromIterable(
           new Iterable.generate(interfaceType.element.typeParameters.length), key: (int i)
@@ -726,11 +727,11 @@ class ImplementationModifier extends GeneralizingAstVisitor implements
         return t is TypeParameterType ? genericsMapping[t] : t;
       });
       handleType(clazz, targetName, interfaceType.element, newGenericsMapping,
-          excludes, addMember);
+          excludes, addMember, isInterface: isInterface);
     }
-    reapplyWith(templateElement.supertype);
-    templateElement.mixins.forEach(reapplyWith);
-    templateElement.interfaces.forEach(reapplyWith);
+    reapplyWith(templateElement.supertype, isInterface);
+    templateElement.mixins.forEach((e) => reapplyWith(e, isInterface));
+    templateElement.interfaces.forEach((e) => reapplyWith(e, true));
   }
 }
 
