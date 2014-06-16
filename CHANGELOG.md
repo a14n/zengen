@@ -1,3 +1,9 @@
+# v0.2.5 (2014-06-16)
+
+## Bug Fixes
+
+- @DefaultConstructor() doesn't create `const` for now.
+
 # v0.2.4 (2014-06-14)
 
 ## Bug Fixes

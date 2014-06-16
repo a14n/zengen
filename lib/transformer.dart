@@ -792,10 +792,7 @@ class DefaultConstructorModifier extends GeneralizingAstVisitor implements
     final mutableVariables = fields.where((e) => !e.isFinal).expand((e) =>
         e.variables);
 
-    final useConst = fields.where((e) => !e.isFinal).isEmpty;
-
     var code = '  @generated ';
-    if (mutableVariables.isEmpty) code += 'const ';
     code += clazz.name.name + '(';
     code += requiredVariables.map((e) => 'this.${e.name.name}').join(', ');
     if (mutableVariables.isNotEmpty) {

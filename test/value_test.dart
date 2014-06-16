@@ -18,7 +18,7 @@ import 'transformation.dart';
 
 main() {
   testTransformation(
-      '@Value() should create a const constructor and hash/equals + toString',
+      '@Value() should create a constructor and hash/equals + toString',
       r'''
 import 'package:zengen/zengen.dart';
 @Value()
@@ -32,7 +32,7 @@ import 'package:zengen/zengen.dart';
 @ToString()
 @Value()
 class A {
-  @generated const A();
+  @generated A();
   @generated @override String toString() => "A()";
   @generated @override int get hashCode => hashObjects([]);
   @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType;
@@ -41,7 +41,7 @@ class A {
       );
 
   testTransformation(
-      '@Value() should create a const constructor with named optional parameters',
+      '@Value() should create a constructor with named optional parameters',
       r'''
 import 'package:zengen/zengen.dart';
 @Value()
@@ -61,7 +61,7 @@ class A {
   final int a;
   final b, c;
   final List d;
-  @generated const A(this.a, this.b, this.c, this.d);
+  @generated A(this.a, this.b, this.c, this.d);
   @generated @override String toString() => "A(a=$a, b=$b, c=$c, d=$d)";
   @generated @override int get hashCode => hashObjects([a, b, c, d]);
   @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a && o.b == b && o.c == c && o.d == d;
@@ -89,7 +89,7 @@ class A {
   final int a, b;
   @generated @override int get hashCode => hashObjects([b]);
   @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.b == b;
-  @generated const A(this.a, this.b);
+  @generated A(this.a, this.b);
   @generated @override String toString() => "A(a=$a, b=$b)";
 }
 '''

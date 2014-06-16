@@ -17,7 +17,7 @@ library zengen.default_constructor;
 import 'transformation.dart';
 
 main() {
-  testTransformation('@DefaultConstructor() should create a const constructor',
+  testTransformation('@DefaultConstructor() should create a constructor',
       r'''
 import 'package:zengen/zengen.dart';
 @DefaultConstructor()
@@ -28,13 +28,13 @@ class A {
 import 'package:zengen/zengen.dart';
 @DefaultConstructor()
 class A {
-  @generated const A();
+  @generated A();
 }
 '''
       );
 
   testTransformation(
-      '@DefaultConstructor() should create a const constructor if only final fields',
+      '@DefaultConstructor() should create a constructor if only final fields',
       r'''
 import 'package:zengen/zengen.dart';
 @DefaultConstructor()
@@ -52,7 +52,7 @@ import 'package:zengen/zengen.dart';
 @DefaultConstructor()
 class A {
   final a, b;
-  @generated const A(this.a, this.b);
+  @generated A(this.a, this.b);
 }
 @DefaultConstructor()
 class B {
@@ -77,7 +77,7 @@ import 'package:zengen/zengen.dart';
 @DefaultConstructor()
 class A {
   final a, b = 1;
-  @generated const A(this.a);
+  @generated A(this.a);
 }
 '''
       );
