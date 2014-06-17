@@ -1,11 +1,10 @@
-ZenGen
-======
+# ZenGen
 
 This project provides a [pub transformer](https://www.dartlang.org/tools/pub/glossary.html#transformer) to generate boilerplate code.
 
 This library is inspired from the [project Lombok](http://projectlombok.org) in the Java world.
 
-## Warning ##
+## Warning
 
 Dart file modifications are not **yet** well integrated in the Dart editor.
 
@@ -13,9 +12,9 @@ If you run a web app use `pub serve` and launch dartium with `localhost:8080` in
 
 If you run a server app launch the built version of your dart file after a `pub build` instead of _Run_ on your original file.
 
-## Features ##
+## Features
 
-### @ToString() ###
+### @ToString()
 
 Annotating a class with `@ToString()` will generate an implementation of `String toString()` built by default with its public getters.
 
@@ -48,7 +47,7 @@ The code generated can be customized with the following optional parameters:
 - `exclude`: a list of getter names can be exclude with this argument.
 - `includePrivate`: if set to `true` the generation will include private getters.
 
-### @EqualsAndHashCode() ###
+### @EqualsAndHashCode()
 
 Annotating a class with `@EqualsAndHashCode()` will generate an implementation of `bool operator ==(o)` and `int get hashCode` built by default with its public getters.
 
@@ -82,10 +81,10 @@ The code generated can be customize with the following optional parameters:
 - `exclude`: a list of getter names can be exclude with this argument.
 - `includePrivate`: if set to `true` the generation will include private getters.
 
-### @DefaultConstructor() ###
+### @DefaultConstructor()
 
 Annotating a class with `@DefaultConstructor()` will generate a default constructor with uninitialized final fields as required parameters and mutable fields as optional named parameters.
-If the class contains only final fields the generated constructor will be a _const_ constructor. 
+You can use the `useConst` parameter to generate a _const constructor_.
 
 For instance :
 
@@ -108,7 +107,7 @@ class B {
 }
 ```
 
-### @Value() ###
+### @Value()
 
 Annotating a class with `@Value()` is the same as annotating the class with `@DefaultConstructor()`, `@EqualsAndHashCode()` and `@ToString()`.
 
@@ -139,8 +138,9 @@ class A {
 ```
 
 Note that you can customize `@EqualsAndHashCode()` and `@ToString()` by using the annotation with the custom parameters.
+You can use the `useConst` parameter to generate a _const constructor_.
 
-### @Delegate() ###
+### @Delegate()
 
 Annotating a field/getter with `@Delegate()` will add to the enclosing class all the public methods available on the type of the field/getter.
 
@@ -173,7 +173,7 @@ The code generated can be customize with the following optional parameters:
 
 - `exclude`: a list of members can be exclude with this argument.
 
-### @Lazy() ###
+### @Lazy()
 
 Annotating a field with `@Lazy()` will make it lazy computed.
 
@@ -199,7 +199,7 @@ class A {
 
 The lazy fields are stored into `_lazyFields` by field names. If the field is _final_ no setter will be generated.
 
-### @Implementation() ###
+### @Implementation()
 
 Annotating a method with `@Implementation()` will make it the method called by all abstract members.
 The method annotated must have exactly one parameter of type `StringInvocation`.
@@ -230,7 +230,7 @@ class A {
 }
 ```
 
-## Usage ##
+## Usage
 To use this library in your code :
 
 * add a dependency in your `pubspec.yaml` :
@@ -253,5 +253,5 @@ transformers:
 import 'package:zengen/zengen.dart';
 ```
 
-## License ##
+## License
 Apache 2.0

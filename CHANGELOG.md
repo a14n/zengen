@@ -1,3 +1,9 @@
+# v0.2.6 (2014-06-17)
+
+## Features
+
+- `@DefaultConstructor()` and `@Value()` now accept a `useConst` to generate a const constructor ([#17](https://github.com/a14n/zengen/issues/17)).
+
 # v0.2.5 (2014-06-16)
 
 ## Bug Fixes

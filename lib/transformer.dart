@@ -783,6 +783,9 @@ class DefaultConstructorModifier extends GeneralizingAstVisitor implements
     if (getAnnotations(clazz, 'DefaultConstructor').isEmpty) return;
     if (isMemberAlreadyDefined(clazz, '')) return;
 
+    final annotation = getAnnotations(clazz, 'DefaultConstructor').first;
+    final useConst = getUseConst(annotation);
+
     final Iterable<VariableDeclarationList> fields = clazz.members.where((e) =>
         e is FieldDeclaration && !e.isStatic).map((e) => e.fields);
 
@@ -793,6 +796,7 @@ class DefaultConstructorModifier extends GeneralizingAstVisitor implements
         e.variables);
 
     var code = '  @generated ';
+    if (useConst == true) code += 'const ';
     code += clazz.name.name + '(';
     code += requiredVariables.map((e) => 'this.${e.name.name}').join(', ');
     if (mutableVariables.isNotEmpty) {
@@ -804,6 +808,16 @@ class DefaultConstructorModifier extends GeneralizingAstVisitor implements
     code += ');\n';
 
     transformations.add(new Transformation.insertion(clazz.end - 1, code));
+  }
+
+  bool getUseConst(Annotation annotation) {
+    final NamedExpression useConstPart =
+        annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
+        e.name.label.name == 'useConst', orElse: () => null);
+    if (useConstPart != null) {
+      return (useConstPart.expression as BooleanLiteral).value;
+    }
+    return null;
   }
 }
 
@@ -823,8 +837,11 @@ class ValueModifier extends GeneralizingAstVisitor implements ContentModifier {
 
     // default constructor
     if (getAnnotations(clazz, 'DefaultConstructor').isEmpty) {
+      final annotation = getAnnotations(clazz, 'Value').first;
+      final useConst = getUseConst(annotation);
+
       transformations.add(new Transformation.insertion(clazz.offset,
-          '@DefaultConstructor()\n'));
+          '@DefaultConstructor(${useConst == true ? 'useConst: true': ''})\n'));
     }
 
     // hashCode/==
@@ -838,6 +855,16 @@ class ValueModifier extends GeneralizingAstVisitor implements ContentModifier {
       transformations.add(new Transformation.insertion(clazz.offset,
           '@ToString()\n'));
     }
+  }
+
+  bool getUseConst(Annotation annotation) {
+    final NamedExpression useConstPart =
+        annotation.arguments.arguments.firstWhere((e) => e is NamedExpression &&
+        e.name.label.name == 'useConst', orElse: () => null);
+    if (useConstPart != null) {
+      return (useConstPart.expression as BooleanLiteral).value;
+    }
+    return null;
   }
 }
 

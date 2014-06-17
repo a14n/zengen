@@ -41,6 +41,29 @@ class A {
       );
 
   testTransformation(
+      '@Value() should create a const constructor and hash/equals + toString',
+      r'''
+import 'package:zengen/zengen.dart';
+@Value(useConst: true)
+class A {
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+@DefaultConstructor(useConst: true)
+@EqualsAndHashCode()
+@ToString()
+@Value(useConst: true)
+class A {
+  @generated const A();
+  @generated @override String toString() => "A()";
+  @generated @override int get hashCode => hashObjects([]);
+  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType;
+}
+'''
+      );
+
+  testTransformation(
       '@Value() should create a constructor with named optional parameters',
       r'''
 import 'package:zengen/zengen.dart';

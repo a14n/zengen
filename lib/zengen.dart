@@ -67,12 +67,18 @@ class Lazy {
 
 /// Annotation to use on classes to create a default constructor with uninitialized final fields.
 class DefaultConstructor {
-  const DefaultConstructor();
+  /** The indicator to use when a const construtor have to be generated. */
+  final bool useConst;
+
+  const DefaultConstructor({this.useConst});
 }
 
 /// Annotation to use on classes to make them immutable const classes.
 class Value {
-  const Value();
+  /** The indicator to use when a const construtor have to be generated. */
+  final bool useConst;
+
+  const Value({this.useConst});
 }
 
 /// Annotation to use on a method accepting a [StringInvocation] parameter. This method will be called for every abstract members of the class.

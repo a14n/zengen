@@ -33,6 +33,22 @@ class A {
 '''
       );
 
+  testTransformation('@DefaultConstructor() should create a const constructor',
+      r'''
+import 'package:zengen/zengen.dart';
+@DefaultConstructor(useConst: true)
+class A {
+}
+''',
+      r'''
+import 'package:zengen/zengen.dart';
+@DefaultConstructor(useConst: true)
+class A {
+  @generated const A();
+}
+'''
+      );
+
   testTransformation(
       '@DefaultConstructor() should create a constructor if only final fields',
       r'''
