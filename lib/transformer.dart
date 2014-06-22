@@ -34,6 +34,7 @@ final MODIFIERS = <ContentModifier>[//
   new EqualsAndHashCodeAppender(), //
   new DelegateAppender(), //
   new LazyModifier(), //
+  new CachedModifier(), //
   new ValueModifier(), //
 ];
 
@@ -552,6 +553,82 @@ class LazyModifier extends GeneralizingAstVisitor implements ContentModifier {
       }
     }
     transformations.add(createRemoveTransformation(field));
+  }
+}
+
+class CachedModifier extends GeneralizingAstVisitor implements ContentModifier {
+  final transformations = [];
+
+  @override
+  List<Transformation> accept(CompilationUnitElement unitElement) {
+    transformations.clear();
+    unitElement.unit.visitChildren(this);
+    return transformations;
+  }
+
+  @override visitClassDeclaration(ClassDeclaration clazz) {
+    super.visitClassDeclaration(clazz);
+    if (clazz.members.where((e) => e is MethodDeclaration && !e.isStatic).every(
+        (m) => getAnnotations(m, 'Cached').isEmpty)) return;
+    transformations.add(new Transformation.insertion(clazz.end - 1,
+        '  @generated final _caches = <Symbol, Cache> {};\n'));
+
+    if (!isMemberAlreadyDefined(clazz, '_createCache')) {
+      transformations.add(new Transformation.insertion(clazz.end - 1,
+          '  @generated Cache _createCache(Symbol methodName, Function compute)'
+          ' => new Cache(compute);\n'));
+    }
+  }
+
+  @override visitMethodDeclaration(MethodDeclaration method) {
+    super.visitMethodDeclaration(method);
+    if (getAnnotations(method, 'Cached').isEmpty) return;
+    final ClassDeclaration clazz = method.parent;
+
+    // remove @Cached annotation
+    final annotation = getAnnotations(method, 'Cached').first;
+    transformations.add(new Transformation(annotation.offset, annotation.end,
+        '@generated'));
+
+    // build initFn
+    String initFn = method.isGetter ? '() ' : '';
+    initFn += method.toSource().substring(method.name.end - method.offset).trim(
+        );
+    if (initFn.endsWith(';')) initFn = initFn.substring(0, initFn.length - 1);
+
+    // build parameter for call
+    String parameters = '[]';
+    if (method.parameters != null) {
+      final requiredParameters = method.parameters == null ? [] :
+          method.parameters.parameters.where((p) => p is NormalFormalParameter);
+      final optionalPositionalParameters = method.parameters == null ? [] :
+          method.parameters.parameters.where((p) => p is DefaultFormalParameter && p.kind
+          == ParameterKind.POSITIONAL);
+      final optionalNamedParameters = method.parameters == null ? [] :
+          method.parameters.parameters.where((p) => p is DefaultFormalParameter && p.kind
+          == ParameterKind.NAMED);
+      final positionalParameters = []
+          ..addAll(requiredParameters)
+          ..addAll(optionalPositionalParameters);
+
+      parameters = '[';
+      parameters += positionalParameters.map((p) => p.identifier.name).join(', '
+          );
+      parameters += ']';
+      if (optionalNamedParameters.isNotEmpty) {
+        parameters += ', ';
+        parameters += '{';
+        parameters += optionalNamedParameters.map((p) => '#' + p.identifier.name
+            + ': ' + p.identifier.name).join(', ');
+        parameters += '}';
+      }
+    }
+
+    // add transformation
+    transformations.add(new Transformation(method.body.offset, method.body.end,
+        '=> _caches.putIfAbsent(#${method.name.name}, '
+        '() => _createCache(#${method.name.name}, ${initFn}))' '.getValue($parameters);'
+        ));
   }
 }
 

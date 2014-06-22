@@ -14,6 +14,8 @@
 
 library zengen;
 
+import 'package:collection/equality.dart' show ListEquality, MapEquality;
+
 export 'package:quiver/core.dart' show hashObjects;
 
 /// Marker on generated elements
@@ -85,7 +87,6 @@ class Value {
 class Implementation {
   const Implementation();
 }
-
 /// Same structure as [Invocation] but with [String] instead of [Symbol].
 class StringInvocation {
   /** The name of the invoked member. */
@@ -134,4 +135,50 @@ class StringInvocation {
       "positionalArguments=$positionalArguments, namedArguments=$namedArguments, "
       "isMethod=$isMethod, isGetter=$isGetter, isSetter=$isSetter, "
       "isAccessor=$isAccessor)";
+}
+
+/// Annotation to use on methods to cache the result. You can customize the [Cache] used by implementing `Cache _createCache(Symbol methodName, Function compute)`.
+class Cached {
+  const Cached();
+}
+/// Class used to call for the computed value.
+abstract class Cache<T> {
+  factory Cache(Function compute) => new NoLimitCache(compute);
+
+  getValue(List positionalArguments, [Map<Symbol, dynamic> namedArguments]);
+}
+/// An implementation of [Cache] that does not cache anything and always compute the result.
+class NoCache implements Cache {
+  final Function _compute;
+  NoCache(this._compute);
+
+  getValue(List positionalArguments, [Map<Symbol, dynamic> namedArguments]) =>
+      Function.apply(_compute, positionalArguments, namedArguments);
+}
+/// A key containing the parameters used to call a method.
+class CacheKey {
+  static const _listEquality = const ListEquality();
+  static const _mapEquality = const MapEquality();
+
+  final List positionalArguments;
+  final Map<Symbol, dynamic> namedArguments;
+
+  CacheKey(this.positionalArguments, [this.namedArguments = const {}]);
+
+  @override int get hashCode => _listEquality.hash([_listEquality.hash(
+      positionalArguments), _mapEquality.hash(namedArguments)]);
+  @override bool operator ==(o) => identical(this, o) || runtimeType ==
+      o.runtimeType && _listEquality.equals(positionalArguments, o.positionalArguments
+      ) && _mapEquality.equals(namedArguments, o.namedArguments);
+}
+/// An implementation of [Cache] that computes the result only once and always returns the same result.
+class NoLimitCache implements Cache {
+  final Function _compute;
+  final values = <CacheKey, dynamic> {};
+  NoLimitCache(this._compute);
+
+  getValue(List positionalArguments, [Map<Symbol, dynamic> namedArguments =
+      const {}]) => values.putIfAbsent(new CacheKey(positionalArguments,
+      namedArguments), () => Function.apply(_compute, positionalArguments,
+      namedArguments));
 }

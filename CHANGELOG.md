@@ -1,3 +1,9 @@
+# v0.2.7 (2014-06-22)
+
+## Features
+
+- `@Cached()`: allows to cache results of methods ([#14](https://github.com/a14n/zengen/issues/14)).
+
 # v0.2.6 (2014-06-17)
 
 ## Features

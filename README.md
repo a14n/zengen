@@ -199,6 +199,32 @@ class A {
 
 The lazy fields are stored into `_lazyFields` by field names. If the field is _final_ no setter will be generated.
 
+### @Cached()
+
+Annotating a method with `@Cached()` will make its result managed by a cache. By default the cache used is a _forever_ cache that will compute the result once and keep it forever in memory.
+
+For instance :
+
+```dart
+import 'package:zengen/zengen.dart';
+class A {
+  @Cached() int fib(int n) => (n < 2) ? n : fib(n - 1) + fib(n - 2);
+}
+```
+
+will be transformed to :
+
+```dart
+import 'package:zengen/zengen.dart';
+class A {
+  @generated int fib(int n) => _caches.putIfAbsent(#fib, () => _createCache(#fib, (int n) => (n < 2) ? n : fib(n - 1) + fib(n - 2))).getValue([n]);
+  @generated final _caches = <Symbol, Cache> {};
+  @generated Cache _createCache(Symbol methodName, Function compute) => new Cache(compute);
+}
+```
+
+The caches for each method are stored into `_caches`. You can implement your own `Cache _createCache(Symbol methodName, Function compute)` to customize the cache policy.
+
 ### @Implementation()
 
 Annotating a method with `@Implementation()` will make it the method called by all abstract members.

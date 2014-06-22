@@ -19,7 +19,8 @@ import 'delegate_test.dart' as delegate;
 import 'lazy_test.dart' as lazy;
 import 'default_constructor_test.dart' as default_constructor;
 import 'value_test.dart' as value;
-import 'implementation_test.dart' as implmentation;
+import 'implementation_test.dart' as implementation;
+import 'cached_test.dart' as cached;
 
 main() {
   to_string.main();
@@ -29,5 +30,6 @@ main() {
   lazy.main();
   default_constructor.main();
   value.main();
-  implmentation.main();
+  implementation.main();
+  cached.main();
 }
