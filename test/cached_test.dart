@@ -14,9 +14,117 @@
 
 library zengen.cached;
 
+import 'dart:async';
+
+import 'package:unittest/unittest.dart';
+import 'package:zengen/zengen.dart';
+
 import 'transformation.dart';
 
 main() {
+  group('CustomCache', () {
+
+    test('should cache result', () {
+      int n = 0;
+      final cache = new CustomCache(() {
+        n++;
+        return 1;
+      });
+      cache.getValue([]);
+      expect(n, equals(1));
+      cache.getValue([]);
+      expect(n, equals(1));
+    });
+
+    test('should cache result with different parameters', () {
+      int n = 0;
+      final cache = new CustomCache((int i) {
+        n++;
+        return 1;
+      });
+      cache.getValue([1]);
+      expect(n, equals(1));
+      cache.getValue([2]);
+      expect(n, equals(2));
+      cache.getValue([1]);
+      expect(n, equals(2));
+      cache.getValue([2]);
+      expect(n, equals(2));
+    });
+
+    test('should not cache result with maxCapacity=0', () {
+      int n = 0;
+      final cache = new CustomCache(() {
+        n++;
+        return 1;
+      }, maxCapacity: 0);
+      cache.getValue([]);
+      expect(n, equals(1));
+      cache.getValue([]);
+      expect(n, equals(2));
+    });
+
+    test('should cache result with maxCapacity=2', () {
+      int n = 0;
+      final cache = new CustomCache(() {
+        n++;
+        return 1;
+      }, maxCapacity: 2);
+      cache.getValue([]);
+      expect(n, equals(1));
+      cache.getValue([]);
+      expect(n, equals(1));
+    });
+
+    test('should expire the cache after access', () {
+      int n = 0;
+      final cache = new CustomCache(() {
+        n++;
+        return 1;
+      }, expireAfterAccess: const Duration(milliseconds: 30));
+      cache.getValue([]);
+      expect(n, equals(1));
+      cache.getValue([]);
+      expect(n, equals(1));
+      final t = new Timer.periodic(const Duration(milliseconds: 10), (t) {
+        cache.getValue([]);
+      });
+      new Timer(const Duration(milliseconds: 50), () {
+        expect(n, equals(1));
+        t.cancel();
+        new Timer(const Duration(milliseconds: 50), () {
+          cache.getValue([]);
+          expect(n, equals(2));
+          cache.getValue([]);
+          expect(n, equals(2));
+        });
+      });
+    });
+
+    test('should expire the cache after write', () {
+      int n = 0;
+      final cache = new CustomCache(() {
+        n++;
+        return 1;
+      }, expireAfterWrite: const Duration(milliseconds: 30));
+      cache.getValue([]);
+      expect(n, equals(1));
+      cache.getValue([]);
+      expect(n, equals(1));
+      final t = new Timer.periodic(const Duration(milliseconds: 10), (t) {
+        cache.getValue([]);
+      });
+      new Timer(const Duration(milliseconds: 50), () {
+        cache.getValue([]);
+        expect(n, equals(2));
+        cache.getValue([]);
+        expect(n, equals(2));
+        t.cancel();
+      });
+    });
+
+  });
+
   testTransformation('@Cached() should accept getters',
       r'''
 import 'package:zengen/zengen.dart';
@@ -57,7 +165,8 @@ class A {
 '''
       );
 
-  testTransformation('@Cached() should accept methods with optional positional parameters',
+  testTransformation(
+      '@Cached() should accept methods with optional positional parameters',
       r'''
 import 'package:zengen/zengen.dart';
 class A {
@@ -76,7 +185,8 @@ class A {
 '''
       );
 
-  testTransformation('@Cached() should accept methods with optional named parameters',
+  testTransformation(
+      '@Cached() should accept methods with optional named parameters',
       r'''
 import 'package:zengen/zengen.dart';
 class A {

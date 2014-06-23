@@ -14,6 +14,9 @@
 
 library zengen;
 
+import 'dart:async';
+import 'dart:collection';
+
 import 'package:collection/equality.dart' show ListEquality, MapEquality;
 
 export 'package:quiver/core.dart' show hashObjects;
@@ -174,11 +177,77 @@ class CacheKey {
 /// An implementation of [Cache] that computes the result only once and always returns the same result.
 class NoLimitCache implements Cache {
   final Function _compute;
-  final values = <CacheKey, dynamic> {};
+  final values = new HashMap<CacheKey, dynamic>();
   NoLimitCache(this._compute);
 
   getValue(List positionalArguments, [Map<Symbol, dynamic> namedArguments =
       const {}]) => values.putIfAbsent(new CacheKey(positionalArguments,
       namedArguments), () => Function.apply(_compute, positionalArguments,
       namedArguments));
+}
+/// An implementation of [Cache] that computes the result only once and always returns the same result.
+class CustomCache implements Cache {
+  final Function _compute;
+  final Map<CacheKey, dynamic> values;
+  final int maxCapacity;
+  final Duration expireAfterAccess;
+  final Duration expireAfterWrite;
+
+  final _expireAfterAccessTimers = new HashMap<CacheKey, Timer>();
+  final _expireAfterWriteTimers = new HashMap<CacheKey, Timer>();
+
+  CustomCache(this._compute, {int
+      maxCapacity, this.expireAfterAccess, this.expireAfterWrite})
+      : maxCapacity = maxCapacity,
+        values = (maxCapacity == null ? new HashMap<CacheKey, dynamic>() :
+          new LinkedHashMap<CacheKey, dynamic>());
+
+  getValue(List positionalArguments, [Map<Symbol, dynamic> namedArguments =
+      const {}]) {
+    final cacheKey = new CacheKey(positionalArguments, namedArguments);
+
+    // expiration on access handling
+    if (expireAfterAccess != null) {
+      _removeTimer(cacheKey, _expireAfterAccessTimers);
+      _expireAfterAccessTimers[cacheKey] = new Timer(expireAfterAccess, () {
+        _removeTimer(cacheKey, _expireAfterAccessTimers);
+        values.remove(cacheKey);
+      });
+    }
+
+    // maxCapacity exceeded: remove the last accessed key (at first position)
+    if (maxCapacity != null && values.length >= maxCapacity &&
+        values.isNotEmpty) {
+      values.remove(values.keys.first);
+    }
+
+    // get or compute
+    bool isNew = false;
+    final result = values.putIfAbsent(cacheKey, () {
+      isNew = true;
+
+      // expiration on write handling
+      if (expireAfterWrite != null) {
+        _removeTimer(cacheKey, _expireAfterWriteTimers);
+        _expireAfterWriteTimers[cacheKey] = new Timer(expireAfterWrite, () {
+          _removeTimer(cacheKey, _expireAfterWriteTimers);
+          values.remove(cacheKey);
+        });
+      }
+
+      return Function.apply(_compute, positionalArguments, namedArguments);
+    });
+
+    // maxCapacity: put the Last Read at the lastest position
+    if (maxCapacity != null && !isNew) {
+      values[cacheKey] = values.remove(cacheKey);
+    }
+
+    return result;
+  }
+
+  void _removeTimer(CacheKey cacheKey, Map<CacheKey, Timer> timers) {
+    final t = timers.remove(cacheKey);
+    if (t != null) t.cancel();
+  }
 }
