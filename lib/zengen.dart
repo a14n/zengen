@@ -159,14 +159,14 @@ class NoCache implements Cache {
       Function.apply(_compute, positionalArguments, namedArguments);
 }
 /// A key containing the parameters used to call a method.
-class CacheKey {
+class MethodArguments {
   static const _listEquality = const ListEquality();
   static const _mapEquality = const MapEquality();
 
   final List positionalArguments;
   final Map<Symbol, dynamic> namedArguments;
 
-  CacheKey(this.positionalArguments, [this.namedArguments = const {}]);
+  MethodArguments(this.positionalArguments, [this.namedArguments = const {}]);
 
   @override int get hashCode => _listEquality.hash([_listEquality.hash(
       positionalArguments), _mapEquality.hash(namedArguments)]);
@@ -177,34 +177,34 @@ class CacheKey {
 /// An implementation of [Cache] that computes the result only once and always returns the same result.
 class NoLimitCache implements Cache {
   final Function _compute;
-  final values = new HashMap<CacheKey, dynamic>();
+  final values = new HashMap<MethodArguments, dynamic>();
   NoLimitCache(this._compute);
 
   getValue(List positionalArguments, [Map<Symbol, dynamic> namedArguments =
-      const {}]) => values.putIfAbsent(new CacheKey(positionalArguments,
+      const {}]) => values.putIfAbsent(new MethodArguments(positionalArguments,
       namedArguments), () => Function.apply(_compute, positionalArguments,
       namedArguments));
 }
 /// An implementation of [Cache] that computes the result only once and always returns the same result.
 class CustomCache implements Cache {
   final Function _compute;
-  final Map<CacheKey, dynamic> values;
+  final Map<MethodArguments, dynamic> values;
   final int maxCapacity;
   final Duration expireAfterAccess;
   final Duration expireAfterWrite;
 
-  final _expireAfterAccessTimers = new HashMap<CacheKey, Timer>();
-  final _expireAfterWriteTimers = new HashMap<CacheKey, Timer>();
+  final _expireAfterAccessTimers = new HashMap<MethodArguments, Timer>();
+  final _expireAfterWriteTimers = new HashMap<MethodArguments, Timer>();
 
   CustomCache(this._compute, {int
       maxCapacity, this.expireAfterAccess, this.expireAfterWrite})
       : maxCapacity = maxCapacity,
-        values = (maxCapacity == null ? new HashMap<CacheKey, dynamic>() :
-          new LinkedHashMap<CacheKey, dynamic>());
+        values = (maxCapacity == null ? new HashMap<MethodArguments, dynamic>() :
+          new LinkedHashMap<MethodArguments, dynamic>());
 
   getValue(List positionalArguments, [Map<Symbol, dynamic> namedArguments =
       const {}]) {
-    final cacheKey = new CacheKey(positionalArguments, namedArguments);
+    final cacheKey = new MethodArguments(positionalArguments, namedArguments);
 
     // expiration on access handling
     if (expireAfterAccess != null) {
@@ -246,7 +246,7 @@ class CustomCache implements Cache {
     return result;
   }
 
-  void _removeTimer(CacheKey cacheKey, Map<CacheKey, Timer> timers) {
+  void _removeTimer(MethodArguments cacheKey, Map<MethodArguments, Timer> timers) {
     final t = timers.remove(cacheKey);
     if (t != null) t.cancel();
   }
