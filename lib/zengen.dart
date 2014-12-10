@@ -19,7 +19,9 @@ import 'dart:collection';
 
 import 'package:collection/equality.dart' show ListEquality, MapEquality;
 
-export 'package:quiver/core.dart' show hashObjects;
+import 'package:quiver/core.dart' as quiver show hashObjects;
+
+int hashObjects(Iterable objects) => quiver.hashObjects(objects);
 
 /// Marker on generated elements
 const generated = null;
