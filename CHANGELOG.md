@@ -1,3 +1,9 @@
+# v0.2.8 (2014-12-10)
+
+## Bug fixes
+
+- Getting rid of `export` ([#19](https://github.com/a14n/zengen/issues/19)).
+
 # v0.2.7 (2014-06-22)
 
 ## Features
