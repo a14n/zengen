@@ -28,7 +28,7 @@ class ZengenGenerator extends Generator {
     new ToStringContentModifier(),
     new EqualsAndHashCodeContentModifier(),
     new DelegateContentModifier(),
-    // new LazyModifier(),
+    new LazyContentModifier(),
     // new CachedModifier(),
   ];
 
@@ -585,5 +585,50 @@ class DelegateContentModifier implements ContentModifier {
       return type.element.bound;
     }
     return type;
+  }
+}
+
+class LazyContentModifier implements ContentModifier {
+  @override
+  bool accept(Element element) =>
+      element is ClassElement && element.accessors.any(acceptAccessor);
+
+  static bool acceptAccessor(PropertyAccessorElement accessor) =>
+      !accessor.isStatic &&
+          accessor.isSynthetic &&
+          hasAnnotation(accessor.variable, Lazy);
+
+  @override
+  void visit(ClassElement clazz, Transformer transformer) {
+    transformer.insertAt(clazz.computeNode().end - 1,
+        'final _lazyFields = <Symbol, dynamic>{};');
+    clazz.accessors
+        .where(acceptAccessor)
+        .forEach((accessor) => generateMembers(clazz, transformer, accessor));
+    clazz.accessors
+        .where(acceptAccessor)
+        .map((accessor) => accessor.variable.computeNode().parent.parent)
+        .toSet()
+        .forEach(transformer.removeNode);
+  }
+
+  void generateMembers(ClassElement clazz, Transformer transformer,
+      PropertyAccessorElement accessor) {
+    final VariableDeclaration field = accessor.variable.computeNode();
+    final declaration = field.parent.parent;
+    final type = accessor.variable.type;
+    final name = accessor.variable.name;
+    final value = field.initializer;
+    if (value == null) {
+      throw 'The lazy field $name in $clazz must have an initializer.';
+    }
+    if (accessor.isGetter) {
+      transformer.insertAt(declaration.offset,
+          '$type get $name => _lazyFields.putIfAbsent(#$name, () => $value);');
+    }
+    if (accessor.isSetter) {
+      transformer.insertAt(
+          declaration.offset, 'set $name($type v) => _lazyFields[#$name] = v;');
+    }
   }
 }
