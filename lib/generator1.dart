@@ -29,7 +29,7 @@ class ZengenGenerator extends Generator {
     new EqualsAndHashCodeContentModifier(),
     new DelegateContentModifier(),
     new LazyContentModifier(),
-    // new CachedModifier(),
+    new CachedContentModifier(),
   ];
 
   ZengenGenerator();
@@ -98,6 +98,7 @@ class ZengenGenerator extends Generator {
       // incremental modifications
       loop: while (elementsChanged.isNotEmpty) {
         if (new String.fromEnvironment("debug") != null) {
+          print('------------------------');
           print(incrementalContent);
         }
         final handledElements = getElementsFromLibraryElement(tmpLib)
@@ -630,5 +631,86 @@ class LazyContentModifier implements ContentModifier {
       transformer.insertAt(
           declaration.offset, 'set $name($type v) => _lazyFields[#$name] = v;');
     }
+  }
+}
+
+class CachedContentModifier implements ContentModifier {
+  @override
+  bool accept(Element element) =>
+      element is ClassElement && element.methods.any(acceptMethod);
+
+  bool acceptMethod(MethodElement method) =>
+      !method.isAbstract && !method.isStatic && hasAnnotation(method, Cached);
+
+  @override
+  void visit(ClassElement clazz, Transformer transformer) {
+    final ClassDeclaration classNode = clazz.computeNode();
+    transformer.insertAt(
+        classNode.end - 1, 'final _caches = <Symbol, Cache> {};');
+
+    if (!clazz.methods.any((m) => m.name == '_createCache')) {
+      transformer.insertAt(
+          classNode.end - 1,
+          'Cache _createCache(Symbol methodName, Function compute)'
+          '=> new Cache(compute);');
+    }
+    clazz.methods
+        .where(acceptMethod)
+        .forEach((method) => generateMembers(clazz, transformer, method));
+  }
+
+  void generateMembers(
+      ClassElement clazz, Transformer transformer, MethodElement method) {
+    final methodNode = method.computeNode();
+
+    // remove @Cached annotation
+    getAnnotations(methodNode, Cached)
+        .forEach((e) => transformer.removeNode(e));
+
+    // TODO(aa) inject content
+    final libContent =
+        clazz.library.context.getContents(clazz.library.source).data;
+
+    // build initFn
+    String initFn =
+        libContent.substring(methodNode.name.end, methodNode.end).trim();
+    if (initFn.endsWith(';')) initFn = initFn.substring(0, initFn.length - 1);
+
+    // build parameter for call
+    String parameters = '[]';
+    if (method.parameters != null) {
+      final requiredParameters = method.parameters
+              ?.where((p) => p.parameterKind == ParameterKind.REQUIRED) ??
+          [];
+      final optionalPositionalParameters = method.parameters
+              ?.where((p) => p.parameterKind == ParameterKind.POSITIONAL) ??
+          [];
+      final optionalNamedParameters = method.parameters
+              ?.where((p) => p.parameterKind == ParameterKind.NAMED) ??
+          [];
+      final positionalParameters = []
+        ..addAll(requiredParameters)
+        ..addAll(optionalPositionalParameters);
+
+      parameters = '[';
+      parameters += positionalParameters.map((p) => p.name).join(', ');
+      parameters += ']';
+      if (optionalNamedParameters.isNotEmpty) {
+        parameters += ', ';
+        parameters += '{';
+        parameters += optionalNamedParameters
+            .map((p) => '#' + p.name + ': ' + p.name)
+            .join(', ');
+        parameters += '}';
+      }
+    }
+
+    // add transformation
+    transformer.replace(
+        methodNode.parameters.end,
+        methodNode.end,
+        '=> _caches.putIfAbsent(#${method.name}, '
+        '() => _createCache(#${method.name}, ${initFn}))'
+        '.getValue($parameters);');
   }
 }
