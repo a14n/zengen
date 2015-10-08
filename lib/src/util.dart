@@ -21,14 +21,103 @@ bool hasAnnotation(Element element, Type type) =>
 getAnnotation(Element element, Type type) => instantiateAnnotation(
     element.metadata.singleWhere((e) => matchAnnotation(type, e)));
 
-Iterable<Annotation> getAnnotations(
-    AnnotatedNode node, Type type) sync* {
+Iterable<Annotation> getAnnotations(AnnotatedNode node, Type type) sync* {
   if (node == null || node.metadata == null) return;
   for (Annotation a in node.metadata) {
     if (matchAnnotation(type, a.elementAnnotation)) {
       yield a;
     }
   }
+}
+
+String formatParameter(
+    ParameterElement p, Map<DartType, DartType> genericsMapping) {
+  final type = substituteTypeToGeneric(genericsMapping, p.type);
+  String code = type is FunctionType
+      ? formatFunction(type, p.name, genericsMapping)
+      : '${type} ${p.name}';
+  if (p.defaultValueCode != null) {
+    if (p.parameterKind == ParameterKind.POSITIONAL) code += '=';
+    if (p.parameterKind == ParameterKind.NAMED) code += ':';
+    code += p.defaultValueCode;
+  }
+  return code;
+}
+
+String formatFunction(
+    FunctionType type, String name, Map<DartType, DartType> genericsMapping) {
+  String result = '${type.returnType.displayName} ${name}(';
+
+  final requiredParameters =
+      type.parameters.where((p) => p.parameterKind == ParameterKind.REQUIRED);
+  final optionalPositionalParameters =
+      type.parameters.where((p) => p.parameterKind == ParameterKind.POSITIONAL);
+  final optionalNamedParameters =
+      type.parameters.where((p) => p.parameterKind == ParameterKind.NAMED);
+
+  result += requiredParameters
+      .map((p) => formatParameter(p, genericsMapping))
+      .join(', ');
+
+  if (optionalPositionalParameters.isNotEmpty) {
+    if (requiredParameters.isNotEmpty) result += ', ';
+    result += '[';
+    result += optionalPositionalParameters
+        .map((p) => formatParameter(p, genericsMapping))
+        .join(', ');
+    result += ']';
+  }
+
+  if (optionalNamedParameters.isNotEmpty) {
+    if (requiredParameters.isNotEmpty) result += ', ';
+    result += '{';
+    result += optionalNamedParameters
+        .map((p) => formatParameter(p, genericsMapping))
+        .join(', ');
+    result += '}';
+  }
+
+  result += ')';
+  return result;
+}
+
+/// Returns the [name] or the [name] prefixed by `this.` if a parameter has this
+/// [name].
+String mayPrefixByThis(String name, List<ParameterElement> parameters) =>
+    parameters.map((p) => p.displayName).any((n) => n == name)
+        ? 'this.$name'
+        : name;
+
+DartType substituteTypeToGeneric(
+    Map<DartType, DartType> genericsMapping, DartType type) {
+  if (type is InterfaceType) {
+    if (type.typeParameters.isNotEmpty) {
+      final argumentsTypes = type.typeArguments
+          .map((e) => substituteTypeToGeneric(genericsMapping, e))
+          .toList();
+
+      // http://dartbug.com/19253
+      //        final t = type.substitute4(argumentsTypes);
+      //        return t;
+
+      final newType = new InterfaceTypeImpl(type.element);
+      newType.typeArguments = argumentsTypes;
+      return newType;
+    } else {
+      return type;
+    }
+  }
+  if (type is FunctionType) {
+    return type.substitute3(type.typeArguments
+        .map((e) => substituteTypeToGeneric(genericsMapping, e))
+        .toList());
+  }
+  if (type is TypeParameterType) {
+    if (genericsMapping.containsKey(type)) return genericsMapping[type];
+    if (type.element.bound == null) return DynamicTypeImpl.instance;
+    return type.element.bound;
+  }
+  return type;
 }
 
 class SourceTransformation {
