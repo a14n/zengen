@@ -1,5 +1,4 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
-// 2015-10-02T15:54:30.067Z
 
 part of zengen.example.equals_and_hashcode;
 
@@ -13,7 +12,7 @@ class A {
   final a;
   final int b;
   A(this.a, this.b);
+  @override int get hashCode => hashObjects([a, b]);
   @override bool operator ==(o) => identical(this, o) ||
       o.runtimeType == runtimeType && o.a == a && o.b == b;
-  @override int get hashCode => hashObjects([a, b]);
 }

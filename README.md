@@ -1,16 +1,8 @@
 # ZenGen
 
-This project provides a [pub transformer](https://www.dartlang.org/tools/pub/glossary.html#transformer) to generate boilerplate code.
+This project provides a _source_gen_ generator to generate boilerplate code.
 
 This library is inspired from the [project Lombok](http://projectlombok.org) in the Java world.
-
-## Warning
-
-Dart file modifications are not **yet** well integrated in the Dart editor.
-
-If you run a web app use `pub serve` and launch dartium with `localhost:8080` instead of _Run in Dartium_ on your original file.
-
-If you run a server app launch the built version of your dart file after a `pub build` instead of _Run_ on your original file.
 
 ## Features
 
@@ -276,6 +268,21 @@ dependencies:
 ```dart
 import 'package:zengen/zengen.dart';
 ```
+
+* create a script `build.dart` that run the generator
+
+```dart
+import 'package:zengen/generator.dart';
+import 'package:source_gen/source_gen.dart' show build;
+
+main(List<String> args) async {
+  print(await build(args, [new ZengenGenerator()],
+      librarySearchPaths: ['example/', 'lib/', 'web/', 'test/']));
+}
+```
+
+You can use the [build_system package](https://pub.dartlang.org/packages/build_system) to
+allow the generator to be run on every file changes.
 
 ## License
 Apache 2.0

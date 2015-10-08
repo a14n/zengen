@@ -1,5 +1,4 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
-// 2015-10-02T17:06:35.337Z
 
 part of zengen.example.value;
 
@@ -14,9 +13,9 @@ class A {
   final b, c;
   A(this.a, this.b, this.c);
   @override String toString() => "A(a=$a, b=$b, c=$c)";
+  @override int get hashCode => hashObjects([a, b, c]);
   @override bool operator ==(o) => identical(this, o) ||
       o.runtimeType == runtimeType && o.a == a && o.b == b && o.c == c;
-  @override int get hashCode => hashObjects([a, b, c]);
 }
 
 @GeneratedFrom(_B)
@@ -25,9 +24,9 @@ class B {
   final b, c;
   const B(this.a, this.b, this.c);
   @override String toString() => "B(a=$a, b=$b, c=$c)";
+  @override int get hashCode => hashObjects([a, b, c]);
   @override bool operator ==(o) => identical(this, o) ||
       o.runtimeType == runtimeType && o.a == a && o.b == b && o.c == c;
-  @override int get hashCode => hashObjects([a, b, c]);
 }
 
 @GeneratedFrom(_C)
@@ -37,7 +36,7 @@ class C {
   const C(this.a, this.b, this.c);
   @override String toString() =>
       "C(super=${super.toString()}, a=$a, b=$b, c=$c)";
+  @override int get hashCode => hashObjects([a, b, c]);
   @override bool operator ==(o) => identical(this, o) ||
       o.runtimeType == runtimeType && o.a == a && o.b == b && o.c == c;
-  @override int get hashCode => hashObjects([a, b, c]);
 }

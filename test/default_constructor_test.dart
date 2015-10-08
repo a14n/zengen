@@ -14,21 +14,20 @@
 
 library zengen.default_constructor;
 
-import 'transformation.dart';
+import 'src/transformation.dart';
 
 main() {
   testTransformation('@DefaultConstructor() should create a constructor',
       r'''
 import 'package:zengen/zengen.dart';
-@DefaultConstructor()
-class A {
+class _A {
+  @DefaultConstructor() external _A();
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@DefaultConstructor()
+@GeneratedFrom(_A)
 class A {
-  @generated A();
+  A();
 }
 '''
       );
@@ -36,15 +35,14 @@ class A {
   testTransformation('@DefaultConstructor() should create a const constructor',
       r'''
 import 'package:zengen/zengen.dart';
-@DefaultConstructor(useConst: true)
-class A {
+class _A {
+  @DefaultConstructor(useConst: true) external _A();
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@DefaultConstructor(useConst: true)
+@GeneratedFrom(_A)
 class A {
-  @generated const A();
+  const A();
 }
 '''
       );
@@ -53,28 +51,27 @@ class A {
       '@DefaultConstructor() should create a constructor if only final fields',
       r'''
 import 'package:zengen/zengen.dart';
-@DefaultConstructor()
-class A {
+class _A {
   final a, b;
+  @DefaultConstructor() external _A();
 }
-@DefaultConstructor()
-class B {
+class _B {
   var a;
   final b;
+  @DefaultConstructor() external _B();
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@DefaultConstructor()
+@GeneratedFrom(_A)
 class A {
   final a, b;
-  @generated A(this.a, this.b);
+  A(this.a, this.b);
 }
-@DefaultConstructor()
+@GeneratedFrom(_B)
 class B {
   var a;
   final b;
-  @generated B(this.b, {this.a});
+  B(this.b, {this.a});
 }
 '''
       );
@@ -83,17 +80,16 @@ class B {
       '@DefaultConstructor() should not use final initialized fields',
       r'''
 import 'package:zengen/zengen.dart';
-@DefaultConstructor()
-class A {
+class _A {
   final a, b = 1;
+  @DefaultConstructor() external _A();
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@DefaultConstructor()
+@GeneratedFrom(_A)
 class A {
   final a, b = 1;
-  @generated A(this.a);
+  A(this.a);
 }
 '''
       );

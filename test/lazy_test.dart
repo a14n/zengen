@@ -14,84 +14,79 @@
 
 library zengen.lazy;
 
-import 'transformation.dart';
+import 'src/transformation.dart';
 
 main() {
-  testTransformation('@Lazy() should create a getter and a setter',
+  testTransformation(
+      '@Lazy() should create a getter and a setter',
       r'''
 import 'package:zengen/zengen.dart';
-class A {
+class _A {
   @Lazy() var a = "String";
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
+@GeneratedFrom(_A)
 class A {
-  
-  @generated dynamic get a => _lazyFields.putIfAbsent(#a, () => "String");
-  @generated set a(dynamic v) => _lazyFields[#a] = v;
-  @generated final _lazyFields = <Symbol, dynamic>{};
+  set a(dynamic v) => _lazyFields[#a] = v;
+  dynamic get a => _lazyFields.putIfAbsent(#a, () => "String");
+  final _lazyFields = <Symbol, dynamic>{};
 }
-'''
-      );
+''');
 
-  testTransformation('@Lazy() should create only a getter for final field',
+  testTransformation(
+      '@Lazy() should create only a getter for final field',
       r'''
 import 'package:zengen/zengen.dart';
-class A {
+class _A {
   @Lazy() final a = "String";
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
+@GeneratedFrom(_A)
 class A {
-  
-  @generated dynamic get a => _lazyFields.putIfAbsent(#a, () => "String");
-  @generated final _lazyFields = <Symbol, dynamic>{};
+  dynamic get a => _lazyFields.putIfAbsent(#a, () => "String");
+  final _lazyFields = <Symbol, dynamic>{};
 }
-'''
-      );
+''');
 
-  testTransformation('@Lazy() should handle types',
+  testTransformation(
+      '@Lazy() should handle types',
       r'''
 import 'package:zengen/zengen.dart';
-class A {
+class _A {
   @Lazy() String a = "String";
   @Lazy() List<int> l = [1, 2, 3];
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
+@GeneratedFrom(_A)
 class A {
-  
-  @generated String get a => _lazyFields.putIfAbsent(#a, () => "String");
-  @generated set a(String v) => _lazyFields[#a] = v;
-  
-  @generated List<int> get l => _lazyFields.putIfAbsent(#l, () => [1, 2, 3]);
-  @generated set l(List<int> v) => _lazyFields[#l] = v;
-  @generated final _lazyFields = <Symbol, dynamic>{};
+  set a(String v) => _lazyFields[#a] = v;
+  String get a => _lazyFields.putIfAbsent(#a, () => "String");
+  set l(List<int> v) => _lazyFields[#l] = v;
+  List<int> get l => _lazyFields.putIfAbsent(#l, () => [1, 2, 3]);
+  final _lazyFields = <Symbol, dynamic>{};
 }
-'''
-      );
+''');
 
   testTransformation(
       '@Lazy() should handle several variables on the same field declaration',
       r'''
 import 'package:zengen/zengen.dart';
-class A {
+class _A {
   @Lazy() String a = "1", b = "2";
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
+@GeneratedFrom(_A)
 class A {
-  
-  @generated String get a => _lazyFields.putIfAbsent(#a, () => "1");
-  @generated set a(String v) => _lazyFields[#a] = v;
-  @generated String get b => _lazyFields.putIfAbsent(#b, () => "2");
-  @generated set b(String v) => _lazyFields[#b] = v;
-  @generated final _lazyFields = <Symbol, dynamic>{};
+  String get a => _lazyFields.putIfAbsent(#a, () => "1");
+  set a(String v) => _lazyFields[#a] = v;
+  String get b => _lazyFields.putIfAbsent(#b, () => "2");
+  set b(String v) => _lazyFields[#b] = v;
+  final _lazyFields = <Symbol, dynamic>{};
 }
-'''
-      );
+''',
+      skip: true);
 }

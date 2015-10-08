@@ -1,5 +1,4 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
-// 2015-10-08T08:31:54.416Z
 
 part of zengen.example.delegate;
 

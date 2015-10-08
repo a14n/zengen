@@ -16,14 +16,13 @@ library zengen.cached;
 
 import 'dart:async';
 
-import 'package:unittest/unittest.dart';
+import 'package:test/test.dart';
 import 'package:zengen/zengen.dart';
 
-import 'transformation.dart';
+import 'src/transformation.dart';
 
 main() {
   group('CustomCache', () {
-
     test('should cache result', () {
       int n = 0;
       final cache = new CustomCache(() {
@@ -122,104 +121,102 @@ main() {
         t.cancel();
       });
     });
-
   });
 
-  testTransformation('@Cached() should accept getters',
+  testTransformation(
+      '@Cached() should accept getters',
       r'''
 import 'package:zengen/zengen.dart';
-class A {
+class _A {
   @Cached() get a => "String";
   @Cached() get b { return "String"; }
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
+@GeneratedFrom(_A)
 class A {
-  @generated get a => _caches.putIfAbsent(#a, () => _createCache(#a, () => "String")).getValue([]);
-  @generated get b => _caches.putIfAbsent(#b, () => _createCache(#b, () {return "String";})).getValue([]);
-  @generated final _caches = <Symbol, Cache> {};
-  @generated Cache _createCache(Symbol methodName, Function compute) => new Cache(compute);
+  get a => _caches.putIfAbsent(#a, () => _createCache(#a, () => "String")).getValue([]);
+  get b => _caches.putIfAbsent(#b, () => _createCache(#b, () {return "String";})).getValue([]);
+  Cache _createCache(Symbol methodName, Function compute) => new Cache(compute);
+  final _caches = <Symbol, Cache> {};
 }
-'''
-      );
+''',
+      skip: true);
 
-  testTransformation('@Cached() should accept methods with parameters',
+  testTransformation(
+      '@Cached() should accept methods with parameters',
       r'''
 import 'package:zengen/zengen.dart';
-class A {
+class _A {
   @Cached() int m1() => 1;
   @Cached() int m2(int p1) => 1;
   @Cached() int m3(int p1, p2, String p3) => 1;
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
+@GeneratedFrom(_A)
 class A {
-  @generated int m1() => _caches.putIfAbsent(#m1, () => _createCache(#m1, () => 1)).getValue([]);
-  @generated int m2(int p1) => _caches.putIfAbsent(#m2, () => _createCache(#m2, (int p1) => 1)).getValue([p1]);
-  @generated int m3(int p1, p2, String p3) => _caches.putIfAbsent(#m3, () => _createCache(#m3, (int p1, p2, String p3) => 1)).getValue([p1, p2, p3]);
-  @generated final _caches = <Symbol, Cache> {};
-  @generated Cache _createCache(Symbol methodName, Function compute) => new Cache(compute);
+  int m1() => _caches.putIfAbsent(#m1, () => _createCache(#m1, () => 1)).getValue([]);
+  int m2(int p1) => _caches.putIfAbsent(#m2, () => _createCache(#m2, (int p1) => 1)).getValue([p1]);
+  int m3(int p1, p2, String p3) => _caches.putIfAbsent(#m3, () => _createCache(#m3, (int p1, p2, String p3) => 1)).getValue([p1, p2, p3]);
+  Cache _createCache(Symbol methodName, Function compute) => new Cache(compute);
+  final _caches = <Symbol, Cache> {};
 }
-'''
-      );
+''');
 
   testTransformation(
       '@Cached() should accept methods with optional positional parameters',
       r'''
 import 'package:zengen/zengen.dart';
-class A {
+class _A {
   @Cached() int m2([int p1]) => 1;
   @Cached() int m3(int p1, [p2, String p3]) => 1;
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
+@GeneratedFrom(_A)
 class A {
-  @generated int m2([int p1]) => _caches.putIfAbsent(#m2, () => _createCache(#m2, ([int p1]) => 1)).getValue([p1]);
-  @generated int m3(int p1, [p2, String p3]) => _caches.putIfAbsent(#m3, () => _createCache(#m3, (int p1, [p2, String p3]) => 1)).getValue([p1, p2, p3]);
-  @generated final _caches = <Symbol, Cache> {};
-  @generated Cache _createCache(Symbol methodName, Function compute) => new Cache(compute);
+  int m2([int p1]) => _caches.putIfAbsent(#m2, () => _createCache(#m2, ([int p1]) => 1)).getValue([p1]);
+  int m3(int p1, [p2, String p3]) => _caches.putIfAbsent(#m3, () => _createCache(#m3, (int p1, [p2, String p3]) => 1)).getValue([p1, p2, p3]);
+  Cache _createCache(Symbol methodName, Function compute) => new Cache(compute);
+  final _caches = <Symbol, Cache> {};
 }
-'''
-      );
+''');
 
   testTransformation(
       '@Cached() should accept methods with optional named parameters',
       r'''
 import 'package:zengen/zengen.dart';
-class A {
+class _A {
   @Cached() int m2({int p1}) => 1;
   @Cached() int m3(int p1, {p2, String p3}) => 1;
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
+@GeneratedFrom(_A)
 class A {
-  @generated int m2({int p1}) => _caches.putIfAbsent(#m2, () => _createCache(#m2, ({int p1}) => 1)).getValue([], {#p1: p1});
-  @generated int m3(int p1, {p2, String p3}) => _caches.putIfAbsent(#m3, () => _createCache(#m3, (int p1, {p2, String p3}) => 1)).getValue([p1], {#p2: p2, #p3: p3});
-  @generated final _caches = <Symbol, Cache> {};
-  @generated Cache _createCache(Symbol methodName, Function compute) => new Cache(compute);
+  int m2({int p1}) => _caches.putIfAbsent(#m2, () => _createCache(#m2, ({int p1}) => 1)).getValue([], {#p1: p1});
+  int m3(int p1, {p2, String p3}) => _caches.putIfAbsent(#m3, () => _createCache(#m3, (int p1, {p2, String p3}) => 1)).getValue([p1], {#p2: p2, #p3: p3});
+  Cache _createCache(Symbol methodName, Function compute) => new Cache(compute);
+  final _caches = <Symbol, Cache> {};
 }
-'''
-      );
+''');
 
-  testTransformation('@Cached() should keep the user defined _createCache',
+  testTransformation(
+      '@Cached() should keep the user defined _createCache',
       r'''
 import 'package:zengen/zengen.dart';
-class A {
-  @Cached() get a => "String";
+class _A {
+  @Cached() m1() => "String";
   Cache _createCache(Symbol methodName, Function compute) => null;
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
+@GeneratedFrom(_A)
 class A {
-  @generated get a => _caches.putIfAbsent(#a, () => _createCache(#a, () => "String")).getValue([]);
+  m1() => _caches.putIfAbsent(#m1, () => _createCache(#m1, () => "String")).getValue([]);
   Cache _createCache(Symbol methodName, Function compute) => null;
-  @generated final _caches = <Symbol, Cache> {};
+  final _caches = <Symbol, Cache> {};
 }
-'''
-      );
+''');
 }

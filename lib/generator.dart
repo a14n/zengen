@@ -224,11 +224,11 @@ class EqualsAndHashCodeContentModifier implements ContentModifier {
         getters.map((f) => ' && o.$f == $f').join() +
         ';';
 
-    if (!clazz.methods.any((m) => m.name == 'hashCode')) {
-      transformer.insertAt(classNode.end - 1, hashCode);
-    }
     if (!clazz.methods.any((m) => m.name == '==')) {
       transformer.insertAt(classNode.end - 1, equals);
+    }
+    if (!clazz.accessors.any((m) => m.name == 'hashCode')) {
+      transformer.insertAt(classNode.end - 1, hashCode);
     }
   }
 }
@@ -295,13 +295,23 @@ class ValueContentModifier implements ContentModifier {
     if (!hasAnnotation(clazz, EqualsAndHashCode)) {
       transformer.insertAt(classNode.offset, '@EqualsAndHashCode()');
     }
-    clazz.constructors
-        .where((constructor) => constructor.isExternal &&
-            !hasAnnotation(constructor, DefaultConstructor))
-        .forEach((constructor) {
-      transformer.insertAt(constructor.computeNode().offset,
-          '@DefaultConstructor(useConst:${annotation.useConst})');
-    });
+
+    if (clazz.constructors.length == 1 &&
+        clazz.constructors.single.isDefaultConstructor &&
+        clazz.constructors.single.isSynthetic) {
+      transformer.insertAt(
+          classNode.end - 1,
+          '@DefaultConstructor(useConst:${annotation.useConst}) '
+          'external ${clazz.name}();');
+    } else {
+      clazz.constructors
+          .where((constructor) => constructor.isExternal &&
+              !hasAnnotation(constructor, DefaultConstructor))
+          .forEach((constructor) {
+        transformer.insertAt(constructor.computeNode().offset,
+            '@DefaultConstructor(useConst:${annotation.useConst})');
+      });
+    }
   }
 }
 
@@ -636,7 +646,9 @@ class ImplementationContentModifier implements ContentModifier {
   @override
   void visit(ClassElement clazz, Transformer transformer) {
     final ClassDeclaration classNode = clazz.computeNode();
-    transformer.removeToken(classNode.abstractKeyword);
+    if (classNode.abstractKeyword != null) {
+      transformer.removeToken(classNode.abstractKeyword);
+    }
     clazz.methods
         .where(acceptMethod)
         .forEach((method) => generateMembers(clazz, transformer, method));

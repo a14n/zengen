@@ -1,5 +1,4 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
-// 2015-10-02T16:37:43.243Z
 
 part of zengen.example.default_constructor;
 

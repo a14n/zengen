@@ -14,7 +14,7 @@
 
 library zengen.value;
 
-import 'transformation.dart';
+import 'src/transformation.dart';
 
 main() {
   testTransformation(
@@ -22,75 +22,61 @@ main() {
       r'''
 import 'package:zengen/zengen.dart';
 @Value()
-class A {
+class _A {
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@DefaultConstructor()
-@EqualsAndHashCode()
-@ToString()
-@Value()
+@GeneratedFrom(_A)
 class A {
-  @generated A();
-  @generated @override String toString() => "A()";
-  @generated @override int get hashCode => hashObjects([]);
-  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType;
+  A();
+  @override String toString() => "A()";
+  @override int get hashCode => hashObjects([]);
+  @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType;
 }
-'''
-      );
+''');
 
   testTransformation(
       '@Value() should create a const constructor and hash/equals + toString',
       r'''
 import 'package:zengen/zengen.dart';
 @Value(useConst: true)
-class A {
+class _A {
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@DefaultConstructor(useConst: true)
-@EqualsAndHashCode()
-@ToString()
-@Value(useConst: true)
+@GeneratedFrom(_A)
 class A {
-  @generated const A();
-  @generated @override String toString() => "A()";
-  @generated @override int get hashCode => hashObjects([]);
-  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType;
+  const A();
+  @override String toString() => "A()";
+  @override int get hashCode => hashObjects([]);
+  @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType;
 }
-'''
-      );
+''');
 
   testTransformation(
       '@Value() should create a constructor with named optional parameters',
       r'''
 import 'package:zengen/zengen.dart';
 @Value()
-class A {
+class _A {
   final int a;
   final b, c;
   final List d;
+  external _A();
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@DefaultConstructor()
-@EqualsAndHashCode()
-@ToString()
-@Value()
+@GeneratedFrom(_A)
 class A {
   final int a;
   final b, c;
   final List d;
-  @generated A(this.a, this.b, this.c, this.d);
-  @generated @override String toString() => "A(a=$a, b=$b, c=$c, d=$d)";
-  @generated @override int get hashCode => hashObjects([a, b, c, d]);
-  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a && o.b == b && o.c == c && o.d == d;
+  A(this.a, this.b, this.c, this.d);
+  @override String toString() => "A(a=$a, b=$b, c=$c, d=$d)";
+  @override int get hashCode => hashObjects([a, b, c, d]);
+  @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a && o.b == b && o.c == c && o.d == d;
 }
-'''
-      );
+''');
 
   testTransformation(
       '@Value() should be customized with @EqualsAndHashCode',
@@ -98,23 +84,19 @@ class A {
 import 'package:zengen/zengen.dart';
 @EqualsAndHashCode(exclude: const[#a])
 @Value()
-class A {
+class _A {
   final int a, b;
+  external _A();
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@DefaultConstructor()
-@ToString()
-@EqualsAndHashCode(exclude: const[#a])
-@Value()
+@GeneratedFrom(_A)
 class A {
   final int a, b;
-  @generated @override int get hashCode => hashObjects([b]);
-  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.b == b;
-  @generated A(this.a, this.b);
-  @generated @override String toString() => "A(a=$a, b=$b)";
+  @override int get hashCode => hashObjects([b]);
+  @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.b == b;
+  A(this.a, this.b);
+  @override String toString() => "A(a=$a, b=$b)";
 }
-'''
-      );
+''', skip: true);
 }

@@ -1,5 +1,4 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
-// 2015-10-04T19:47:53.267Z
 
 part of zengen.example.to_string;
 
