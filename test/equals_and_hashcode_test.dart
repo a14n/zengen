@@ -14,7 +14,7 @@
 
 library zengen.equals_and_hashcode;
 
-import 'transformation.dart';
+import 'src/transformation.dart';
 
 main() {
   testTransformation(
@@ -22,171 +22,162 @@ main() {
       r'''
 import 'package:zengen/zengen.dart';
 @EqualsAndHashCode()
-class A {
+class _A {
   static var s;
   var a;
   int b;
-  A();
+  _A();
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@EqualsAndHashCode()
+@GeneratedFrom(_A)
 class A {
   static var s;
   var a;
   int b;
   A();
-  @generated @override int get hashCode => hashObjects([a, b]);
-  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a && o.b == b;
+  @override int get hashCode => hashObjects([a, b]);
+  @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a && o.b == b;
 }
-'''
-      );
+''');
 
-  testTransformation('@EqualsAndHashCode() should not use hashCode getter',
+  testTransformation(
+      '@EqualsAndHashCode() should not use hashCode getter',
       r'''
 import 'package:zengen/zengen.dart';
 @EqualsAndHashCode()
-class A {
+class _A {
   static var s;
   var a;
   int b;
+  _A();
   int get hashCode => 1;
-  A();
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@EqualsAndHashCode()
+@GeneratedFrom(_A)
 class A {
   static var s;
   var a;
   int b;
-  int get hashCode => 1;
   A();
-  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a && o.b == b;
+  int get hashCode => 1;
+  @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a && o.b == b;
 }
-'''
-      );
+''');
 
-  testTransformation('@EqualsAndHashCode() should not use private accessors',
+  testTransformation(
+      '@EqualsAndHashCode() should not use private accessors',
       r'''
 import 'package:zengen/zengen.dart';
 @EqualsAndHashCode()
+class _A {
+  var a, _b;
+  _A();
+}
+''',
+      r'''
+@GeneratedFrom(_A)
 class A {
   var a, _b;
   A();
+  @override int get hashCode => hashObjects([a]);
+  @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a;
 }
-''',
-      r'''
-import 'package:zengen/zengen.dart';
-@EqualsAndHashCode()
-class A {
-  var a, _b;
-  A();
-  @generated @override int get hashCode => hashObjects([a]);
-  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a;
-}
-'''
-      );
+''');
 
-  testTransformation('@EqualsAndHashCode(includePrivate: true) should use private accessors',
+  testTransformation(
+      '@EqualsAndHashCode(includePrivate: true) should use private accessors',
       r'''
 import 'package:zengen/zengen.dart';
 @EqualsAndHashCode(includePrivate: true)
-class A {
+class _A {
   var a, _b;
-  A();
+  _A();
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@EqualsAndHashCode(includePrivate: true)
+@GeneratedFrom(_A)
 class A {
   var a, _b;
   A();
-  @generated @override int get hashCode => hashObjects([a, _b]);
-  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a && o._b == _b;
+  @override int get hashCode => hashObjects([a, _b]);
+  @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a && o._b == _b;
 }
-'''
-      );
+''');
 
-  testTransformation('@EqualsAndHashCode(callSuper: true) should call super',
+  testTransformation(
+      '@EqualsAndHashCode(callSuper: true) should call super',
       r'''
 import 'package:zengen/zengen.dart';
 @EqualsAndHashCode(callSuper: true)
+class _B extends A {
+  static var s;
+  final c;
+  final String d;
+  _B(this.c, this.d);
+}
+''',
+      r'''
+@GeneratedFrom(_B)
 class B extends A {
   static var s;
   final c;
   final String d;
   B(this.c, this.d);
+  @override int get hashCode => hashObjects([super.hashCode, c, d]);
+  @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && super == o && o.c == c && o.d == d;
 }
-''',
-      r'''
-import 'package:zengen/zengen.dart';
-@EqualsAndHashCode(callSuper: true)
-class B extends A {
-  static var s;
-  final c;
-  final String d;
-  B(this.c, this.d);
-  @generated @override int get hashCode => hashObjects([super.hashCode, c, d]);
-  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && super == o && o.c == c && o.d == d;
-}
-'''
-      );
+''');
 
   testTransformation(
       "@EqualsAndHashCode(callSuper: false) shouldn't call super",
       r'''
 import 'package:zengen/zengen.dart';
 @EqualsAndHashCode(callSuper: false)
-class C extends A {
+class _C extends A {
   static var s;
   final c;
   final String d;
-  C(this.c, this.d);
+  _C(this.c, this.d);
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@EqualsAndHashCode(callSuper: false)
+@GeneratedFrom(_C)
 class C extends A {
   static var s;
   final c;
   final String d;
   C(this.c, this.d);
-  @generated @override int get hashCode => hashObjects([c, d]);
-  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.c == c && o.d == d;
+  @override int get hashCode => hashObjects([c, d]);
+  @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.c == c && o.d == d;
 }
-'''
-      );
+''');
 
   testTransformation(
       '@EqualsAndHashCode(exclude: const[#b, #d]) should not use b or d',
       r'''
 import 'package:zengen/zengen.dart';
 @EqualsAndHashCode(exclude: const [#b, #d])
-class D {
+class _D {
   static var s;
   var a;
   int b;
   String c, d;
-  D();
+  _D();
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@EqualsAndHashCode(exclude: const [#b, #d])
+@GeneratedFrom(_D)
 class D {
   static var s;
   var a;
   int b;
   String c, d;
   D();
-  @generated @override int get hashCode => hashObjects([a, c]);
-  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a && o.c == c;
+  @override int get hashCode => hashObjects([a, c]);
+  @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a && o.c == c;
 }
-'''
-      );
+''',
+      skip: true);
 }

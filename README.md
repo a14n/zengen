@@ -1,16 +1,8 @@
 # ZenGen
 
-This project provides a [pub transformer](https://www.dartlang.org/tools/pub/glossary.html#transformer) to generate boilerplate code.
+This project provides a _source_gen_ generator to generate boilerplate code.
 
 This library is inspired from the [project Lombok](http://projectlombok.org) in the Java world.
-
-## Warning
-
-Dart file modifications are not **yet** well integrated in the Dart editor.
-
-If you run a web app use `pub serve` and launch dartium with `localhost:8080` instead of _Run in Dartium_ on your original file.
-
-If you run a server app launch the built version of your dart file after a `pub build` instead of _Run_ on your original file.
 
 ## Features
 
@@ -22,22 +14,22 @@ For instance :
 
 ```dart
 @ToString()
-class A {
+class _A {
   final a;
   final int b;
-  A(this.a, this.b);
+  _A(this.a, this.b);
 }
 ```
 
-will be transformed to :
+will generate :
 
 ```dart
-@ToString()
+@GeneratedFrom(_A)
 class A {
   final a;
   final int b;
   A(this.a, this.b);
-  @generated @override String toString() => "A(a=$a, b=$b)";
+  @override String toString() => "A(a=$a, b=$b)";
 }
 ```
 
@@ -55,23 +47,24 @@ For instance :
 
 ```dart
 @EqualsAndHashCode()
-class A {
+class _A {
   final a;
   final int b;
-  A(this.a, this.b);
+  _A(this.a, this.b);
 }
 ```
 
-will be transformed to :
+will generate :
 
 ```dart
-@EqualsAndHashCode()
+@GeneratedFrom(_A)
 class A {
   final a;
   final int b;
   A(this.a, this.b);
-  @generated @override int get hashCode => hashObjects([a, b]);
-  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a && o.b == b;
+  @override bool operator ==(o) => identical(this, o) ||
+      o.runtimeType == runtimeType && o.a == a && o.b == b;
+  @override int get hashCode => hashObjects([a, b]);
 }
 ```
 
@@ -83,29 +76,31 @@ The code generated can be customize with the following optional parameters:
 
 ### @DefaultConstructor()
 
-Annotating a class with `@DefaultConstructor()` will generate a default constructor with uninitialized final fields as required parameters and mutable fields as optional named parameters.
+Annotating an external constructor with `@DefaultConstructor()` will generate a default constructor with uninitialized final fields as required parameters and mutable fields as optional named parameters.
 You can use the `useConst` parameter to generate a _const constructor_.
 
 For instance :
 
 ```dart
-@DefaultConstructor()
-class B {
+class _A {
   var a;
   final b;
+  @DefaultConstructor() external _A();
 }
 ```
 
-will be transformed to :
+will generate :
 
 ```dart
-@DefaultConstructor()
-class B {
+@GeneratedFrom(_A)
+class A {
   var a;
   final b;
-  @generated B(this.b, {this.a});
+  A(this.b, {this.a});
 }
 ```
+
+The `external _A();` is used to make the analyzer happy and will be removed in the generated `A`.
 
 ### @Value()
 
@@ -115,25 +110,25 @@ For instance :
 
 ```dart
 @Value()
-class A {
+class _A {
   final int a;
   final b, c;
-  final List d;
+  external _A();
 }
 ```
 
-will be transformed to :
+will generate :
 
 ```dart
-@Value()
+@GeneratedFrom(_A)
 class A {
   final int a;
   final b, c;
-  final List d;
-  @generated A(this.a, this.b, this.c, this.d);
-  @generated @override String toString() => "A(a=$a, b=$b, c=$c, d=$d)";
-  @generated @override int get hashCode => hashObjects([a, b, c, d]);
-  @generated @override bool operator ==(o) => identical(this, o) || o.runtimeType == runtimeType && o.a == a && o.b == b && o.c == c && o.d == d;
+  A(this.a, this.b, this.c);
+  @override bool operator ==(o) => identical(this, o) ||
+      o.runtimeType == runtimeType && o.a == a && o.b == b && o.c == c;
+  @override int get hashCode => hashObjects([a, b, c]);
+  @override String toString() => "A(a=$a, b=$b, c=$c)";
 }
 ```
 
@@ -147,25 +142,21 @@ Annotating a field/getter with `@Delegate()` will add to the enclosing class all
 For instance :
 
 ```dart
-import 'package:zengen/zengen.dart';
 abstract class A {
   m1();
 }
-class B {
+class _B {
   @Delegate() A _a;
 }
 ```
 
-will be transformed to :
+will generate :
 
 ```dart
-import 'package:zengen/zengen.dart';
-abstract class A {
-  m1();
-}
+@GeneratedFrom(_B)
 class B {
   @Delegate() A _a;
-  @generated dynamic m1() => _a.m1();
+  m1() => _a.m1();
 }
 ```
 
@@ -180,20 +171,19 @@ Annotating a field with `@Lazy()` will make it lazy computed.
 For instance :
 
 ```dart
-import 'package:zengen/zengen.dart';
-class A {
+class _A {
   @Lazy() var a = "String";
 }
 ```
 
-will be transformed to :
+will generate :
 
 ```dart
-import 'package:zengen/zengen.dart';
+@GeneratedFrom(_A)
 class A {
-  @generated dynamic get a => _lazyFields.putIfAbsent(#a, () => "String");
-  @generated set a(dynamic v) => _lazyFields[#a] = v;
-  @generated final _lazyFields = <Symbol, dynamic>{};
+  dynamic get a => _lazyFields.putIfAbsent(#a, () => "String");
+  set a(dynamic v) => _lazyFields[#a] = v;
+  final _lazyFields = <Symbol, dynamic>{};
 }
 ```
 
@@ -206,20 +196,24 @@ Annotating a method with `@Cached()` will make its result managed by a cache. By
 For instance :
 
 ```dart
-import 'package:zengen/zengen.dart';
-class A {
+class _A {
   @Cached() int fib(int n) => (n < 2) ? n : fib(n - 1) + fib(n - 2);
 }
 ```
 
-will be transformed to :
+will generate :
 
 ```dart
-import 'package:zengen/zengen.dart';
+@GeneratedFrom(_A)
 class A {
-  @generated int fib(int n) => _caches.putIfAbsent(#fib, () => _createCache(#fib, (int n) => (n < 2) ? n : fib(n - 1) + fib(n - 2))).getValue([n]);
-  @generated final _caches = <Symbol, Cache> {};
-  @generated Cache _createCache(Symbol methodName, Function compute) => new Cache(compute);
+  int fib(int n) => _caches
+      .putIfAbsent(
+          #fib,
+          () => _createCache(
+              #fib, (int n) => (n < 2) ? n : fib(n - 1) + fib(n - 2)))
+      .getValue([n]);
+  final _caches = <Symbol, Cache>{};
+  Cache _createCache(Symbol methodName, Function compute) => new Cache(compute);
 }
 ```
 
@@ -235,8 +229,7 @@ This allows to avoid _dart:mirrors_.
 For instance :
 
 ```dart
-import 'package:zengen/zengen.dart';
-class A {
+abstract class _A {
   m1();
   String get g;
   void set s(String s);
@@ -244,15 +237,19 @@ class A {
 }
 ```
 
-will be transformed to :
+will generate :
 
 ```dart
-import 'package:zengen/zengen.dart';
+@GeneratedFrom(_A)
 class A {
-  @generated dynamic m1() => _noSuchMethod(new StringInvocation('m1', isMethod: true));
-  @generated String get g => _noSuchMethod(new StringInvocation('g', isGetter: true));
-  @generated void set s(String s) { _noSuchMethod(new StringInvocation('s', isSetter: true, positionalArguments: [s])); }
-  @Implementation() _noSuchMethod(i) => print(i);
+  m1() => _noSuchMethod(new StringInvocation('m1', isMethod: true));
+  String get g => _noSuchMethod(new StringInvocation('g', isGetter: true));
+  void set s(String s) {
+    _noSuchMethod(
+        new StringInvocation('s', isSetter: true, positionalArguments: [s]));
+  }
+
+  _noSuchMethod(i) => print(i);
 }
 ```
 
@@ -266,18 +263,26 @@ dependencies:
   zengen: any
 ```
 
-* add the transformer in your `pubspec.yaml` :
-
-```yaml
-transformers:
-- zengen
-```
-
 * add import in your `dart` code :
 
 ```dart
 import 'package:zengen/zengen.dart';
 ```
+
+* create a script `build.dart` that run the generator
+
+```dart
+import 'package:zengen/generator.dart';
+import 'package:source_gen/source_gen.dart' show build;
+
+main(List<String> args) async {
+  print(await build(args, [new ZengenGenerator()],
+      librarySearchPaths: ['example/', 'lib/', 'web/', 'test/']));
+}
+```
+
+You can use the [build_system package](https://pub.dartlang.org/packages/build_system) to
+allow the generator to be run on every file changes.
 
 ## License
 Apache 2.0

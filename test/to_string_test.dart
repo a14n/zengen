@@ -14,170 +14,164 @@
 
 library zengen.to_string;
 
-import 'transformation.dart';
+import 'src/transformation.dart';
 
 main() {
-  testTransformation('@ToString() should create a toString() method',
+  testTransformation(
+      '@ToString() should create a toString() method',
       r'''
 import 'package:zengen/zengen.dart';
 @ToString()
-class A {
+class _A {
   static var s;
   var a;
   int b;
-  A();
+  _A();
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@ToString()
+@GeneratedFrom(_A)
 class A {
   static var s;
   var a;
   int b;
   A();
-  @generated @override String toString() => "A(a=$a, b=$b)";
+  @override String toString() => "A(a=$a, b=$b)";
 }
-'''
-      );
+''');
 
-  testTransformation('@ToString() should not use hashCode getter',
+  testTransformation(
+      '@ToString() should not use hashCode getter',
       r'''
 import 'package:zengen/zengen.dart';
 @ToString()
+class _A {
+  static var s;
+  var a;
+  int b;
+  int get hashCode => 1;
+  _A();
+}
+''',
+      r'''
+@GeneratedFrom(_A)
 class A {
   static var s;
   var a;
   int b;
   int get hashCode => 1;
   A();
+  @override String toString() => "A(a=$a, b=$b)";
+}
+''');
+
+  testTransformation(
+      '@ToString() should not use private accessors',
+      r'''
+import 'package:zengen/zengen.dart';
+@ToString()
+class _A {
+  var a, _b;
+  _A();
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@ToString()
-class A {
-  static var s;
-  var a;
-  int b;
-  int get hashCode => 1;
-  A();
-  @generated @override String toString() => "A(a=$a, b=$b)";
-}
-'''
-      );
-
-  testTransformation('@ToString() should not use private accessors',
-      r'''
-import 'package:zengen/zengen.dart';
-@ToString()
+@GeneratedFrom(_A)
 class A {
   var a, _b;
   A();
+  @override String toString() => "A(a=$a)";
 }
-''',
-      r'''
-import 'package:zengen/zengen.dart';
-@ToString()
-class A {
-  var a, _b;
-  A();
-  @generated @override String toString() => "A(a=$a)";
-}
-'''
-      );
+''');
 
-  testTransformation('@ToString(includePrivate: true) should use private accessors',
+  testTransformation(
+      '@ToString(includePrivate: true) should use private accessors',
       r'''
 import 'package:zengen/zengen.dart';
 @ToString(includePrivate: true)
+class _A {
+  var a, _b;
+  _A();
+}
+''',
+      r'''
+@GeneratedFrom(_A)
 class A {
   var a, _b;
   A();
+  @override String toString() => "A(a=$a, _b=$_b)";
 }
-''',
-      r'''
-import 'package:zengen/zengen.dart';
-@ToString(includePrivate: true)
-class A {
-  var a, _b;
-  A();
-  @generated @override String toString() => "A(a=$a, _b=$_b)";
-}
-'''
-      );
+''');
 
-  testTransformation('@ToString(callSuper: true) should call super',
+  testTransformation(
+      '@ToString(callSuper: true) should call super',
       r'''
 import 'package:zengen/zengen.dart';
 @ToString(callSuper: true)
-class A {
+class _A {
   static var s;
   var a;
   int b;
-  A();
+  _A();
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@ToString(callSuper: true)
+@GeneratedFrom(_A)
 class A {
   static var s;
   var a;
   int b;
   A();
-  @generated @override String toString() => "A(super=${super.toString()}, a=$a, b=$b)";
+  @override String toString() => "A(super=${super.toString()}, a=$a, b=$b)";
 }
-'''
-      );
+''');
 
-  testTransformation("@ToString(callSuper: false) shouldn't call super",
+  testTransformation(
+      "@ToString(callSuper: false) shouldn't call super",
       r'''
 import 'package:zengen/zengen.dart';
 @ToString(callSuper: false)
-class A {
+class _A {
   static var s;
   var a;
   int b;
-  A();
+  _A();
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@ToString(callSuper: false)
+@GeneratedFrom(_A)
 class A {
   static var s;
   var a;
   int b;
   A();
-  @generated @override String toString() => "A(a=$a, b=$b)";
+  @override String toString() => "A(a=$a, b=$b)";
 }
-'''
-      );
+''');
 
-  testTransformation('@ToString(exclude: const[#b, #d]) should not use b or d',
+  testTransformation(
+      '@ToString(exclude: const[#b, #d]) should not use b or d',
       r'''
 import 'package:zengen/zengen.dart';
 @ToString(exclude: const [#b, #d])
-class D {
+class _A {
   static var s;
   var a;
   int b;
   String c, d;
-  D();
+  _A();
 }
 ''',
       r'''
-import 'package:zengen/zengen.dart';
-@ToString(exclude: const [#b, #d])
-class D {
+@GeneratedFrom(_A)
+class A {
   static var s;
   var a;
   int b;
   String c, d;
-  D();
-  @generated @override String toString() => "D(a=$a, c=$c)";
+  A();
+  @override String toString() => "D(a=$a, c=$c)";
 }
-'''
-      );
+''',
+      skip: true);
 }
