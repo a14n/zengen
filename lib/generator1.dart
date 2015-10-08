@@ -22,7 +22,7 @@ final _zengenLibName = 'zengen';
 
 class ZengenGenerator extends Generator {
   final List<ContentModifier> modifiers = <ContentModifier>[
-    // new ImplementationModifier(),
+    new ImplementationContentModifier(),
     new ValueContentModifier(),
     new DefaultConstructorContentModifier(),
     new ToStringContentModifier(),
@@ -369,7 +369,7 @@ class DelegateContentModifier implements ContentModifier {
       ..addAll(((annotation.exclude ?? []) as Iterable<Symbol>)
           .map((e) => MirrorSystem.getName(e)));
     final ClassElement templateElement = type.element;
-    handleTemplate(
+    visitInheritedMembers(
         clazz, accessor.name, templateElement, genericsMapping, excludes,
         (name, code) {
       excludes.add(name);
@@ -377,58 +377,7 @@ class DelegateContentModifier implements ContentModifier {
     });
   }
 
-  String formatParameter(
-      ParameterElement p, Map<DartType, DartType> genericsMapping) {
-    final type = substituteTypeToGeneric(genericsMapping, p.type);
-    String code = type is FunctionType
-        ? formatFunction(type, p.name, genericsMapping)
-        : '${type} ${p.name}';
-    if (p.defaultValueCode != null) {
-      if (p.parameterKind == ParameterKind.POSITIONAL) code += '=';
-      if (p.parameterKind == ParameterKind.NAMED) code += ':';
-      code += p.defaultValueCode;
-    }
-    return code;
-  }
-
-  String formatFunction(
-      FunctionType type, String name, Map<DartType, DartType> genericsMapping) {
-    String result = '${type.returnType.displayName} ${name}(';
-
-    final requiredParameters =
-        type.parameters.where((p) => p.parameterKind == ParameterKind.REQUIRED);
-    final optionalPositionalParameters = type.parameters
-        .where((p) => p.parameterKind == ParameterKind.POSITIONAL);
-    final optionalNamedParameters =
-        type.parameters.where((p) => p.parameterKind == ParameterKind.NAMED);
-
-    result += requiredParameters
-        .map((p) => formatParameter(p, genericsMapping))
-        .join(', ');
-
-    if (optionalPositionalParameters.isNotEmpty) {
-      if (requiredParameters.isNotEmpty) result += ', ';
-      result += '[';
-      result += optionalPositionalParameters
-          .map((p) => formatParameter(p, genericsMapping))
-          .join(', ');
-      result += ']';
-    }
-
-    if (optionalNamedParameters.isNotEmpty) {
-      if (requiredParameters.isNotEmpty) result += ', ';
-      result += '{';
-      result += optionalNamedParameters
-          .map((p) => formatParameter(p, genericsMapping))
-          .join(', ');
-      result += '}';
-    }
-
-    result += ')';
-    return result;
-  }
-
-  void handleTemplate(
+  void visitInheritedMembers(
       ClassElement clazz,
       String targetName,
       ClassElement templateElement,
@@ -544,9 +493,60 @@ class DelegateContentModifier implements ContentModifier {
         final t = interfaceType.typeArguments[i];
         return t is TypeParameterType ? genericsMapping[t] : t;
       });
-      handleTemplate(clazz, targetName, interfaceType.element,
+      visitInheritedMembers(clazz, targetName, interfaceType.element,
           newGenericsMapping, excludes, addMember);
     });
+  }
+
+  String formatParameter(
+      ParameterElement p, Map<DartType, DartType> genericsMapping) {
+    final type = substituteTypeToGeneric(genericsMapping, p.type);
+    String code = type is FunctionType
+        ? formatFunction(type, p.name, genericsMapping)
+        : '${type} ${p.name}';
+    if (p.defaultValueCode != null) {
+      if (p.parameterKind == ParameterKind.POSITIONAL) code += '=';
+      if (p.parameterKind == ParameterKind.NAMED) code += ':';
+      code += p.defaultValueCode;
+    }
+    return code;
+  }
+
+  String formatFunction(
+      FunctionType type, String name, Map<DartType, DartType> genericsMapping) {
+    String result = '${type.returnType.displayName} ${name}(';
+
+    final requiredParameters =
+        type.parameters.where((p) => p.parameterKind == ParameterKind.REQUIRED);
+    final optionalPositionalParameters = type.parameters
+        .where((p) => p.parameterKind == ParameterKind.POSITIONAL);
+    final optionalNamedParameters =
+        type.parameters.where((p) => p.parameterKind == ParameterKind.NAMED);
+
+    result += requiredParameters
+        .map((p) => formatParameter(p, genericsMapping))
+        .join(', ');
+
+    if (optionalPositionalParameters.isNotEmpty) {
+      if (requiredParameters.isNotEmpty) result += ', ';
+      result += '[';
+      result += optionalPositionalParameters
+          .map((p) => formatParameter(p, genericsMapping))
+          .join(', ');
+      result += ']';
+    }
+
+    if (optionalNamedParameters.isNotEmpty) {
+      if (requiredParameters.isNotEmpty) result += ', ';
+      result += '{';
+      result += optionalNamedParameters
+          .map((p) => formatParameter(p, genericsMapping))
+          .join(', ');
+      result += '}';
+    }
+
+    result += ')';
+    return result;
   }
 
   /// Returns the [name] or the [name] prefixed by `this.` if a parameter has this
@@ -712,5 +712,271 @@ class CachedContentModifier implements ContentModifier {
         '=> _caches.putIfAbsent(#${method.name}, '
         '() => _createCache(#${method.name}, ${initFn}))'
         '.getValue($parameters);');
+  }
+}
+
+class ImplementationContentModifier implements ContentModifier {
+  @override
+  bool accept(Element element) =>
+      element is ClassElement && element.methods.any(acceptMethod);
+
+  static bool acceptMethod(MethodElement method) =>
+      !method.isStatic && hasAnnotation(method, Implementation);
+
+  @override
+  void visit(ClassElement clazz, Transformer transformer) {
+    final ClassDeclaration classNode = clazz.computeNode();
+    transformer.removeToken(classNode.abstractKeyword);
+    clazz.methods
+        .where(acceptMethod)
+        .forEach((method) => generateMembers(clazz, transformer, method));
+  }
+
+  void generateMembers(
+      ClassElement clazz, Transformer transformer, MethodElement method) {
+    final ClassDeclaration classNode = clazz.computeNode();
+
+    // remove @Implementation
+    getAnnotations(method.computeNode(), Implementation)
+        .forEach(transformer.removeNode);
+
+    final genericsMapping = clazz.typeParameters == null
+        ? <DartType, DartType>{}
+        : new Map<DartType, DartType>.fromIterables(
+            clazz.typeParameters.map((e) => e.type), clazz.type.typeArguments);
+    final excludes = [];
+    visitAbstractMembers(clazz, method.name, clazz, genericsMapping, excludes,
+        (displayName, code, [node]) {
+      excludes.add(displayName);
+      if (node != null) {
+        transformer.replace(node.offset, node.end, code);
+      } else {
+        transformer.insertAt(classNode.end - 1, code);
+      }
+    });
+  }
+
+  void visitAbstractMembers(
+      ClassElement clazz,
+      String targetName,
+      ClassElement templateElement,
+      Map<DartType, DartType> genericsMapping,
+      List<String> excludes,
+      void addMember(String displayName, String code, [AstNode node]),
+      {bool isInterface: false}) {
+    String replaceTypeToGeneric(DartType e) =>
+        substituteTypeToGeneric(genericsMapping, e).displayName;
+
+    for (final accessor in templateElement.accessors) {
+      final displayName = accessor.displayName + (accessor.isSetter ? '=' : '');
+      if (accessor.isPrivate) continue;
+      if (!isInterface && !accessor.isAbstract) {
+        excludes.add(displayName);
+      }
+      //if (isMemberAlreadyDefined(clazz, displayName)) continue;
+      if (excludes.contains(displayName)) continue;
+
+      String code = '';
+      if (accessor.isSetter) {
+        if (accessor.returnType.isVoid) code += 'void ';
+        code +=
+            'set ${accessor.displayName}(${formatParameter(accessor.parameters.first, genericsMapping)}) '
+            "{ ${mayPrefixByThis(targetName, accessor.parameters)}(new StringInvocation('${accessor.displayName}', isSetter: true, positionalArguments: [${accessor.parameters.first.name}])); }";
+      } else if (accessor.isGetter) {
+        code +=
+            '${replaceTypeToGeneric(accessor.returnType)} get ${accessor.displayName} => '
+            "${mayPrefixByThis(targetName, accessor.parameters)}(new StringInvocation('${accessor.displayName}', isGetter: true));";
+      }
+      addMember(displayName, code,
+          clazz == templateElement ? accessor.computeNode() : null);
+    }
+
+    for (final method in templateElement.methods) {
+      if (method.isPrivate) continue;
+      if (!isInterface && !method.isAbstract) {
+        excludes.add(method.displayName);
+      }
+      //if (isMemberAlreadyDefined(clazz, method.displayName)) continue;
+      if (excludes.contains(method.displayName)) continue;
+
+      final requiredParameters = method.parameters
+          .where((p) => p.parameterKind == ParameterKind.REQUIRED);
+      final optionalPositionalParameters = method.parameters
+          .where((p) => p.parameterKind == ParameterKind.POSITIONAL);
+      final optionalNamedParameters = method.parameters
+          .where((p) => p.parameterKind == ParameterKind.NAMED);
+
+      String parametersDeclaration = requiredParameters
+          .map((p) => formatParameter(p, genericsMapping))
+          .join(', ');
+
+      if (optionalPositionalParameters.isNotEmpty) {
+        if (requiredParameters.isNotEmpty) {
+          parametersDeclaration += ', ';
+        }
+        parametersDeclaration += '[';
+        parametersDeclaration += optionalPositionalParameters
+            .map((p) => formatParameter(p, genericsMapping))
+            .join(', ');
+        parametersDeclaration += ']';
+      }
+
+      if (optionalNamedParameters.isNotEmpty) {
+        if (requiredParameters.isNotEmpty) {
+          parametersDeclaration += ', ';
+        }
+        parametersDeclaration += '{';
+        parametersDeclaration += optionalNamedParameters
+            .map((p) => formatParameter(p, genericsMapping))
+            .join(', ');
+        parametersDeclaration += '}';
+      }
+
+      String stringInvocation =
+          "new StringInvocation('${method.name}', isMethod: true";
+      if (requiredParameters.isNotEmpty ||
+          optionalPositionalParameters.isNotEmpty) {
+        final parameters = (<ParameterElement>[]
+          ..addAll(requiredParameters)
+          ..addAll(optionalPositionalParameters)).map((e) => e.name);
+        stringInvocation += ', positionalArguments: [${parameters.join(', ')}]';
+      }
+      if (optionalNamedParameters.isNotEmpty) {
+        stringInvocation += ', namedArguments: {' +
+            optionalNamedParameters
+                .map((e) => "'${e.name}': ${e.name}")
+                .join(', ') +
+            '}';
+      }
+      stringInvocation += ')';
+
+      final returnType = method.returnType;
+      String methodSignature = '${method.displayName}($parametersDeclaration)';
+      String delegateCall =
+          '${mayPrefixByThis(targetName, method.parameters)}($stringInvocation)';
+      if (method.isOperator) {
+        methodSignature =
+            'operator ${method.displayName}($parametersDeclaration)';
+      }
+
+      String code = '';
+      if (returnType.isVoid) {
+        code += 'void $methodSignature { $delegateCall; }';
+      } else {
+        code +=
+            '${replaceTypeToGeneric(returnType)} $methodSignature => $delegateCall;';
+      }
+      addMember(method.displayName, code,
+          clazz == templateElement ? method.computeNode() : null);
+    }
+
+    // go through inherited types
+    // mixins are proceeded after because a parent can implements an abstract method in mixin
+    reapplyWith(InterfaceType interfaceType, bool isInterface) {
+      if (interfaceType == null) return;
+      final newGenericsMapping = new Map<DartType, DartType>.fromIterable(
+          new Iterable.generate(interfaceType.element.typeParameters.length),
+          key: (int i) => interfaceType.element.typeParameters[i].type,
+          value: (int i) {
+        final t = interfaceType.typeArguments[i];
+        return t is TypeParameterType ? genericsMapping[t] : t;
+      });
+      visitAbstractMembers(clazz, targetName, interfaceType.element,
+          newGenericsMapping, excludes, addMember,
+          isInterface: isInterface);
+    }
+    reapplyWith(templateElement.supertype, isInterface);
+    templateElement.mixins.forEach((e) => reapplyWith(e, isInterface));
+    templateElement.interfaces.forEach((e) => reapplyWith(e, true));
+  }
+
+  String formatParameter(
+      ParameterElement p, Map<DartType, DartType> genericsMapping) {
+    final type = substituteTypeToGeneric(genericsMapping, p.type);
+    String code = type is FunctionType
+        ? formatFunction(type, p.name, genericsMapping)
+        : '${type} ${p.name}';
+    if (p.defaultValueCode != null) {
+      if (p.parameterKind == ParameterKind.POSITIONAL) code += '=';
+      if (p.parameterKind == ParameterKind.NAMED) code += ':';
+      code += p.defaultValueCode;
+    }
+    return code;
+  }
+
+  String formatFunction(
+      FunctionType type, String name, Map<DartType, DartType> genericsMapping) {
+    String result = '${type.returnType.displayName} ${name}(';
+
+    final requiredParameters =
+        type.parameters.where((p) => p.parameterKind == ParameterKind.REQUIRED);
+    final optionalPositionalParameters = type.parameters
+        .where((p) => p.parameterKind == ParameterKind.POSITIONAL);
+    final optionalNamedParameters =
+        type.parameters.where((p) => p.parameterKind == ParameterKind.NAMED);
+
+    result += requiredParameters
+        .map((p) => formatParameter(p, genericsMapping))
+        .join(', ');
+
+    if (optionalPositionalParameters.isNotEmpty) {
+      if (requiredParameters.isNotEmpty) result += ', ';
+      result += '[';
+      result += optionalPositionalParameters
+          .map((p) => formatParameter(p, genericsMapping))
+          .join(', ');
+      result += ']';
+    }
+
+    if (optionalNamedParameters.isNotEmpty) {
+      if (requiredParameters.isNotEmpty) result += ', ';
+      result += '{';
+      result += optionalNamedParameters
+          .map((p) => formatParameter(p, genericsMapping))
+          .join(', ');
+      result += '}';
+    }
+
+    result += ')';
+    return result;
+  }
+
+  /// Returns the [name] or the [name] prefixed by `this.` if a parameter has this
+  /// [name].
+  String mayPrefixByThis(String name, List<ParameterElement> parameters) =>
+      parameters.map((p) => p.displayName).any((n) => n == name)
+          ? 'this.$name'
+          : name;
+
+  DartType substituteTypeToGeneric(
+      Map<DartType, DartType> genericsMapping, DartType type) {
+    if (type is InterfaceType) {
+      if (type.typeParameters.isNotEmpty) {
+        final argumentsTypes = type.typeArguments
+            .map((e) => substituteTypeToGeneric(genericsMapping, e))
+            .toList();
+
+        // http://dartbug.com/19253
+        //        final t = type.substitute4(argumentsTypes);
+        //        return t;
+
+        final newType = new InterfaceTypeImpl(type.element);
+        newType.typeArguments = argumentsTypes;
+        return newType;
+      } else {
+        return type;
+      }
+    }
+    if (type is FunctionType) {
+      return type.substitute3(type.typeArguments
+          .map((e) => substituteTypeToGeneric(genericsMapping, e))
+          .toList());
+    }
+    if (type is TypeParameterType) {
+      if (genericsMapping.containsKey(type)) return genericsMapping[type];
+      if (type.element.bound == null) return DynamicTypeImpl.instance;
+      return type.element.bound;
+    }
+    return type;
   }
 }
