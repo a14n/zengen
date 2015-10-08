@@ -1,3 +1,7 @@
+# v0.3.0 (2015-10-08)
+
+Brand new implementation based on [source_gen](https://pub.dartlang.org/packages/source_gen).
+
 # v0.2.8 (2014-12-10)
 
 ## Bug fixes
