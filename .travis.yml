@@ -3,4 +3,3 @@ dart:
   - stable
   - dev
 sudo: false
-script: pub run test
