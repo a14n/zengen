@@ -459,4 +459,25 @@ class B implements A {
   dynamic m1() => _a.m1();
 }
 ''');
+
+  testTransformation(
+      '@Delegate() should not create member for static member on delegate',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A {
+  m1();
+  static m2() => null;
+  static get a => null;
+}
+class _B implements A {
+  @Delegate() A _a;
+}
+''',
+      r'''
+@GeneratedFrom(_B)
+class B implements A {
+  A _a;
+  dynamic m1() => _a.m1();
+}
+''');
 }

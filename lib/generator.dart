@@ -401,6 +401,7 @@ class DelegateContentModifier implements ContentModifier {
     for (final accessor in templateElement.accessors) {
       final displayName = accessor.displayName + (accessor.isSetter ? '=' : '');
       if (accessor.isPrivate) continue;
+      if (accessor.isStatic) continue;
       if (excludes.contains(displayName)) continue;
 
       String code = '';
@@ -417,6 +418,7 @@ class DelegateContentModifier implements ContentModifier {
 
     for (final method in templateElement.methods) {
       if (method.isPrivate) continue;
+      if (method.isStatic) continue;
       if (excludes.contains(method.displayName)) continue;
 
       final requiredParameters = method.parameters
