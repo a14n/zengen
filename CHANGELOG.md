@@ -1,3 +1,9 @@
+# v0.3.1 (2015-12-15)
+
+## Bug fixes
+
+See https://github.com/a14n/zengen/milestones/0.3.1
+
 # v0.3.0 (2015-10-08)
 
 Brand new implementation based on [source_gen](https://pub.dartlang.org/packages/source_gen).
