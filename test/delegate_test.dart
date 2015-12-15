@@ -439,4 +439,24 @@ class B implements A {
   dynamic m1() => _a.m1();
 }
 ''');
+
+  testTransformation(
+      '@Delegate() should not add implements clause if already there',
+      r'''
+import 'package:zengen/zengen.dart';
+abstract class A {
+  m1();
+  _m2();
+}
+class _B implements A {
+  @Delegate() A _a;
+}
+''',
+      r'''
+@GeneratedFrom(_B)
+class B implements A {
+  A _a;
+  dynamic m1() => _a.m1();
+}
+''');
 }

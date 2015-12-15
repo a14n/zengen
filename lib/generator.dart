@@ -344,7 +344,8 @@ class DelegateContentModifier implements ContentModifier {
     if (annotation.addImplements) {
       if (classNode.implementsClause == null) {
         transformer.insertAt(classNode.leftBracket.offset, ' implements $type');
-      } else {
+      } else if (classNode.implementsClause.interfaces
+          .every((i) => i.type != type)) {
         transformer.insertAt(classNode.implementsClause.end, ', $type');
       }
     }
