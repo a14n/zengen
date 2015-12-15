@@ -122,7 +122,7 @@ class C implements List<String> {
 
   String operator [](int index) => _l[index];
   Iterable<String> get reversed => _l.reversed;
-  void set length(int newLength) {
+  set length(int newLength) {
     _l.length = newLength;
   }
 

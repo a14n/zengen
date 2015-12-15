@@ -14,7 +14,8 @@ class A {
   A(this.a, this.b, this.c);
   @override String toString() => "A(a=$a, b=$b, c=$c)";
   @override int get hashCode => hashObjects([a, b, c]);
-  @override bool operator ==(o) => identical(this, o) ||
+  @override bool operator ==(o) =>
+      identical(this, o) ||
       o.runtimeType == runtimeType && o.a == a && o.b == b && o.c == c;
 }
 
@@ -25,7 +26,8 @@ class B {
   const B(this.a, this.b, this.c);
   @override String toString() => "B(a=$a, b=$b, c=$c)";
   @override int get hashCode => hashObjects([a, b, c]);
-  @override bool operator ==(o) => identical(this, o) ||
+  @override bool operator ==(o) =>
+      identical(this, o) ||
       o.runtimeType == runtimeType && o.a == a && o.b == b && o.c == c;
 }
 
@@ -37,6 +39,7 @@ class C {
   @override String toString() =>
       "C(super=${super.toString()}, a=$a, b=$b, c=$c)";
   @override int get hashCode => hashObjects([a, b, c]);
-  @override bool operator ==(o) => identical(this, o) ||
+  @override bool operator ==(o) =>
+      identical(this, o) ||
       o.runtimeType == runtimeType && o.a == a && o.b == b && o.c == c;
 }
