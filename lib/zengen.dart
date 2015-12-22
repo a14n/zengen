@@ -164,7 +164,7 @@ class Cached {
 }
 
 /// Class used to call for the computed value.
-abstract class Cache<T> {
+abstract class Cache {
   factory Cache(Function compute) => new NoLimitCache(compute);
 
   getValue(List positionalArguments, [Map<Symbol, dynamic> namedArguments]);

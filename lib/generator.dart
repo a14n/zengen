@@ -156,7 +156,8 @@ class ToStringContentModifier implements ContentModifier {
       element is ClassElement && hasAnnotation(element, ToString);
 
   @override
-  void visit(ClassElement clazz, Transformer transformer) {
+  void visit(Element element, Transformer transformer) {
+    final ClassElement clazz = element;
     final classNode = clazz.computeNode();
     final ToString annotation = getAnnotation(clazz, ToString);
 
@@ -192,7 +193,8 @@ class EqualsAndHashCodeContentModifier implements ContentModifier {
       element is ClassElement && hasAnnotation(element, EqualsAndHashCode);
 
   @override
-  void visit(ClassElement clazz, Transformer transformer) {
+  void visit(Element element, Transformer transformer) {
+    final ClassElement clazz = element;
     final classNode = clazz.computeNode();
     final EqualsAndHashCode annotation =
         getAnnotation(clazz, EqualsAndHashCode);
@@ -242,7 +244,8 @@ class DefaultConstructorContentModifier implements ContentModifier {
       constructor.isExternal && hasAnnotation(constructor, DefaultConstructor);
 
   @override
-  void visit(ClassElement clazz, Transformer transformer) {
+  void visit(Element element, Transformer transformer) {
+    final ClassElement clazz = element;
     clazz.constructors.where(acceptConstructor).forEach(
         (constructor) => replaceConstructor(clazz, transformer, constructor));
   }
@@ -283,7 +286,8 @@ class ValueContentModifier implements ContentModifier {
       element is ClassElement && hasAnnotation(element, Value);
 
   @override
-  void visit(ClassElement clazz, Transformer transformer) {
+  void visit(Element element, Transformer transformer) {
+    final ClassElement clazz = element;
     final classNode = clazz.computeNode();
     final Value annotation = getAnnotation(clazz, Value);
 
@@ -327,7 +331,8 @@ class DelegateContentModifier implements ContentModifier {
               accessor.isSynthetic ? accessor.variable : accessor, Delegate);
 
   @override
-  void visit(ClassElement clazz, Transformer transformer) {
+  void visit(Element element, Transformer transformer) {
+    final ClassElement clazz = element;
     clazz.accessors
         .where(acceptAccessor)
         .forEach((accessor) => generateMembers(clazz, transformer, accessor));
@@ -523,7 +528,8 @@ class LazyContentModifier implements ContentModifier {
           hasAnnotation(accessor.variable, Lazy);
 
   @override
-  void visit(ClassElement clazz, Transformer transformer) {
+  void visit(Element element, Transformer transformer) {
+    final ClassElement clazz = element;
     transformer.insertAt(clazz.computeNode().end - 1,
         'final _lazyFields = <Symbol, dynamic>{};');
     clazz.accessors
@@ -566,7 +572,8 @@ class CachedContentModifier implements ContentModifier {
       !method.isAbstract && !method.isStatic && hasAnnotation(method, Cached);
 
   @override
-  void visit(ClassElement clazz, Transformer transformer) {
+  void visit(Element element, Transformer transformer) {
+    final ClassElement clazz = element;
     final ClassDeclaration classNode = clazz.computeNode();
     transformer.insertAt(
         classNode.end - 1, 'final _caches = <Symbol, Cache> {};');
@@ -647,7 +654,8 @@ class ImplementationContentModifier implements ContentModifier {
       !method.isStatic && hasAnnotation(method, Implementation);
 
   @override
-  void visit(ClassElement clazz, Transformer transformer) {
+  void visit(Element element, Transformer transformer) {
+    final ClassElement clazz = element;
     final ClassDeclaration classNode = clazz.computeNode();
     if (classNode.abstractKeyword != null) {
       transformer.removeToken(classNode.abstractKeyword);
