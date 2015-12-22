@@ -1,3 +1,9 @@
+# v0.3.2 (2015-12-22)
+
+Update [quiver](https://pub.dartlang.org/packages/quiver) version range.
+
+See https://github.com/a14n/zengen/milestones/0.3.2
+
 # v0.3.1 (2015-12-15)
 
 ## Bug fixes
