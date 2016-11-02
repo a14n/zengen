@@ -11,6 +11,6 @@ dependencies:
 dev_dependencies:
   browser: ^0.10.0
   test: ^0.12.0
-dependency_overrides:
-  zengen:
-    path: ../main_lib
+#dependency_overrides:
+#  zengen:
+#    path: ../main_lib

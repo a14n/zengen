@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/a14n/zengen.svg)](https://travis-ci.org/a14n/zengen)
 
-This project provides a _source_gen_ generator to generate boilerplate code.
+This project allows to generate boilerplate code.
 
 This library is inspired from the [project Lombok](http://projectlombok.org) in the Java world.
 
