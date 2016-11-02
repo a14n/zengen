@@ -1,3 +1,10 @@
+# v0.4.0 (2016-11-02)
+
+Update to last [source_gen](https://pub.dartlang.org/packages/source_gen) version range.
+Split Zengen into 2 packages (the dependency and the generator)
+
+See https://github.com/a14n/zengen/milestones/0.4.0
+
 # v0.3.2 (2015-12-22)
 
 Update [quiver](https://pub.dartlang.org/packages/quiver) version range.

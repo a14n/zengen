@@ -28,7 +28,7 @@ testTransformation(String spec, String source, String expectedContent, {skip}) {
     final testSource = new StringSource(source, 'source.dart');
     context.applyChanges(new ChangeSet()..addedSource(testSource));
     final lib = context.computeLibraryElement(testSource);
-    final content = await new ZengenGenerator().generate(lib);
+    final content = await new ZengenGenerator().generate(lib, null);
     final formater = new DartFormatter();
     expect(formater.format(content), equals(formater.format(expectedContent)));
   }, skip: skip);

@@ -42,8 +42,8 @@ class C implements List<String> {
 
   bool contains(Object element) => _l.contains(element);
   Iterable expand(Iterable f(String element)) => _l.expand(f);
-  Iterable<String> where(bool f(String element)) => _l.where(f);
-  Iterable map(dynamic f(String element)) => _l.map(f);
+  Iterable<String> where(bool test(String element)) => _l.where(test);
+  Iterable map(dynamic f(String e)) => _l.map(f);
   String get single => _l.single;
   String get last => _l.last;
   String get first => _l.first;

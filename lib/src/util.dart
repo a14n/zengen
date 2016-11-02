@@ -3,13 +3,16 @@
 // LICENSE file.
 
 import 'package:analyzer/analyzer.dart';
-import 'package:analyzer/src/generated/ast.dart';
-import 'package:analyzer/src/generated/element.dart';
-import 'package:analyzer/src/generated/scanner.dart';
+import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/token.dart';
+import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/type.dart';
+import 'package:analyzer/src/dart/element/type.dart';
 import 'package:source_gen/src/annotation.dart';
 
-LibraryElement getLib(LibraryElement library, String name) => library
-    .visibleLibraries.firstWhere((l) => l.name == name, orElse: () => null);
+LibraryElement getLib(LibraryElement library, String name) =>
+    library.importedLibraries
+        .firstWhere((l) => l.name == name, orElse: () => null);
 
 ClassElement getType(
         LibraryElement library, String libName, String className) =>

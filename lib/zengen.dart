@@ -17,11 +17,9 @@ library zengen;
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:collection/equality.dart' show ListEquality, MapEquality;
+import 'package:collection/collection.dart' show ListEquality, MapEquality;
 
-import 'package:quiver/core.dart' as quiver show hashObjects;
-
-int hashObjects(Iterable objects) => quiver.hashObjects(objects);
+export 'package:quiver_hashcode/hashcode.dart' show hashObjects;
 
 /// Annotation to use on classes to generate the `toString()` method.
 ///
@@ -147,7 +145,8 @@ class StringInvocation {
   /// Whether the invocation was a getter or a setter call.
   bool get isAccessor => isGetter || isSetter;
 
-  @override String toString() => "StringInvocation(memberName=$memberName, "
+  @override
+  String toString() => "StringInvocation(memberName=$memberName, "
       "positionalArguments=$positionalArguments, "
       "namedArguments=$namedArguments, "
       "isMethod=$isMethod, "
@@ -190,11 +189,14 @@ class MethodArguments {
 
   MethodArguments(this.positionalArguments, [this.namedArguments = const {}]);
 
-  @override int get hashCode => _listEquality.hash([
+  @override
+  int get hashCode => _listEquality.hash([
         _listEquality.hash(positionalArguments),
         _mapEquality.hash(namedArguments)
       ]);
-  @override bool operator ==(o) => identical(this, o) ||
+  @override
+  bool operator ==(o) =>
+      identical(this, o) ||
       runtimeType == o.runtimeType &&
           _listEquality.equals(positionalArguments, o.positionalArguments) &&
           _mapEquality.equals(namedArguments, o.namedArguments);

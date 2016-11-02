@@ -12,9 +12,12 @@ class A {
   final int a;
   final b, c;
   A(this.a, this.b, this.c);
-  @override String toString() => "A(a=$a, b=$b, c=$c)";
-  @override int get hashCode => hashObjects([a, b, c]);
-  @override bool operator ==(o) =>
+  @override
+  String toString() => "A(a=$a, b=$b, c=$c)";
+  @override
+  int get hashCode => hashObjects([a, b, c]);
+  @override
+  bool operator ==(o) =>
       identical(this, o) ||
       o.runtimeType == runtimeType && o.a == a && o.b == b && o.c == c;
 }
@@ -24,9 +27,12 @@ class B {
   final int a;
   final b, c;
   const B(this.a, this.b, this.c);
-  @override String toString() => "B(a=$a, b=$b, c=$c)";
-  @override int get hashCode => hashObjects([a, b, c]);
-  @override bool operator ==(o) =>
+  @override
+  String toString() => "B(a=$a, b=$b, c=$c)";
+  @override
+  int get hashCode => hashObjects([a, b, c]);
+  @override
+  bool operator ==(o) =>
       identical(this, o) ||
       o.runtimeType == runtimeType && o.a == a && o.b == b && o.c == c;
 }
@@ -36,10 +42,12 @@ class C {
   final int a;
   final b, c;
   const C(this.a, this.b, this.c);
-  @override String toString() =>
-      "C(super=${super.toString()}, a=$a, b=$b, c=$c)";
-  @override int get hashCode => hashObjects([a, b, c]);
-  @override bool operator ==(o) =>
+  @override
+  String toString() => "C(super=${super.toString()}, a=$a, b=$b, c=$c)";
+  @override
+  int get hashCode => hashObjects([a, b, c]);
+  @override
+  bool operator ==(o) =>
       identical(this, o) ||
       o.runtimeType == runtimeType && o.a == a && o.b == b && o.c == c;
 }

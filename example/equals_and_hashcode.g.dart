@@ -12,8 +12,10 @@ class A {
   final a;
   final int b;
   A(this.a, this.b);
-  @override int get hashCode => hashObjects([a, b]);
-  @override bool operator ==(o) =>
+  @override
+  int get hashCode => hashObjects([a, b]);
+  @override
+  bool operator ==(o) =>
       identical(this, o) ||
       o.runtimeType == runtimeType && o.a == a && o.b == b;
 }

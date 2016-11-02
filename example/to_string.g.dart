@@ -12,7 +12,8 @@ class A {
   final a;
   final int b;
   A(this.a, this.b);
-  @override String toString() => "A(a=$a, b=$b)";
+  @override
+  String toString() => "A(a=$a, b=$b)";
 }
 
 @GeneratedFrom(_B)
@@ -20,5 +21,6 @@ class B {
   final a;
   final int b;
   B(this.a, this.b);
-  @override String toString() => "B(a=$a, b=$b)";
+  @override
+  String toString() => "B(a=$a, b=$b)";
 }

@@ -8,8 +8,9 @@ import 'dart:async';
 import 'dart:mirrors';
 
 import 'package:analyzer/analyzer.dart';
-import 'package:analyzer/src/generated/ast.dart';
-import 'package:analyzer/src/generated/element.dart';
+import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/src/generated/engine.dart';
 import 'package:analyzer/src/generated/java_io.dart';
 import 'package:analyzer/src/generated/source_io.dart';
@@ -34,7 +35,7 @@ class ZengenGenerator extends Generator {
 
   ZengenGenerator();
 
-  Future<String> generate(Element element) async {
+  Future<String> generate(Element element, _) async {
     if (element is LibraryElement) {
       // create a temporary file to avoid races if changes are applied on the
       // current lib.
@@ -80,7 +81,7 @@ class ZengenGenerator extends Generator {
           transformer.replace(
               classNode.name.offset, classNode.name.end, newClassName);
 
-          for (final constr
+          for (final ConstructorDeclaration constr
               in classNode.members.where((e) => e is ConstructorDeclaration)) {
             transformer.replace(
                 constr.returnType.offset, constr.returnType.end, newClassName);
@@ -96,7 +97,8 @@ class ZengenGenerator extends Generator {
         ..changedContent(tmpLib.source, initialContent + incrementalContent));
 
       // incremental modifications
-      loop: while (elementsChanged.isNotEmpty) {
+      loop:
+      while (elementsChanged.isNotEmpty) {
         if (new String.fromEnvironment("debug") != null) {
           print('------------------------');
           print(incrementalContent);
@@ -309,7 +311,8 @@ class ValueContentModifier implements ContentModifier {
           'external ${clazz.name}();');
     } else {
       clazz.constructors
-          .where((constructor) => constructor.isExternal &&
+          .where((constructor) =>
+              constructor.isExternal &&
               !hasAnnotation(constructor, DefaultConstructor))
           .forEach((constructor) {
         transformer.insertAt(constructor.computeNode().offset,
@@ -326,9 +329,9 @@ class DelegateContentModifier implements ContentModifier {
 
   static bool acceptAccessor(PropertyAccessorElement accessor) =>
       accessor.isGetter &&
-          !accessor.isStatic &&
-          hasAnnotation(
-              accessor.isSynthetic ? accessor.variable : accessor, Delegate);
+      !accessor.isStatic &&
+      hasAnnotation(
+          accessor.isSynthetic ? accessor.variable : accessor, Delegate);
 
   @override
   void visit(Element element, Transformer transformer) {
@@ -359,7 +362,8 @@ class DelegateContentModifier implements ContentModifier {
     final annotations = getAnnotations(
         accessor.isSynthetic
             ? ((accessor.variable.computeNode() as VariableDeclaration).parent
-                as VariableDeclarationList).parent
+                    as VariableDeclarationList)
+                .parent
             : accessor.computeNode(),
         Delegate);
     for (final annotation in annotations) {
@@ -369,8 +373,7 @@ class DelegateContentModifier implements ContentModifier {
     final genericsMapping = <DartType, DartType>{};
     if (type is ParameterizedType) {
       for (var i = 0; i < type.typeParameters.length; i++) {
-        genericsMapping[type.element.typeParameters[i].type] =
-            type.typeArguments[i];
+        genericsMapping[type.typeParameters[i].type] = type.typeArguments[i];
       }
     }
     final excludes = <String>[
@@ -382,7 +385,7 @@ class DelegateContentModifier implements ContentModifier {
     ]
       ..addAll(clazz.methods.map((e) => e.name))
       ..addAll(clazz.accessors.map((e) => e.name))
-      ..addAll(((annotation.exclude ?? []) as Iterable<Symbol>)
+      ..addAll((annotation.exclude ?? <Symbol>[])
           .map((e) => MirrorSystem.getName(e)));
     final ClassElement templateElement = type.element;
     visitInheritedMembers(
@@ -486,7 +489,6 @@ class DelegateContentModifier implements ContentModifier {
               '${mayPrefixByThis(targetName, method.parameters)}[${parameters[0]}] = ${parameters[1]}';
         }
       }
-
       String code = '';
       if (returnType.isVoid) {
         code += 'void $methodSignature { $delegateCall; }';
@@ -524,8 +526,8 @@ class LazyContentModifier implements ContentModifier {
 
   static bool acceptAccessor(PropertyAccessorElement accessor) =>
       !accessor.isStatic &&
-          accessor.isSynthetic &&
-          hasAnnotation(accessor.variable, Lazy);
+      accessor.isSynthetic &&
+      hasAnnotation(accessor.variable, Lazy);
 
   @override
   void visit(Element element, Transformer transformer) {
@@ -677,7 +679,7 @@ class ImplementationContentModifier implements ContentModifier {
         ? <DartType, DartType>{}
         : new Map<DartType, DartType>.fromIterables(
             clazz.typeParameters.map((e) => e.type), clazz.type.typeArguments);
-    final excludes = [];
+    final excludes = <String>[];
     visitAbstractMembers(clazz, method.name, clazz, genericsMapping, excludes,
         (displayName, code, [node]) {
       excludes.add(displayName);
@@ -770,8 +772,9 @@ class ImplementationContentModifier implements ContentModifier {
       if (requiredParameters.isNotEmpty ||
           optionalPositionalParameters.isNotEmpty) {
         final parameters = (<ParameterElement>[]
-          ..addAll(requiredParameters)
-          ..addAll(optionalPositionalParameters)).map((e) => e.name);
+              ..addAll(requiredParameters)
+              ..addAll(optionalPositionalParameters))
+            .map((e) => e.name);
         stringInvocation += ', positionalArguments: [${parameters.join(', ')}]';
       }
       if (optionalNamedParameters.isNotEmpty) {
@@ -818,6 +821,7 @@ class ImplementationContentModifier implements ContentModifier {
           newGenericsMapping, excludes, addMember,
           isInterface: isInterface);
     }
+
     reapplyWith(templateElement.supertype, isInterface);
     templateElement.mixins.forEach((e) => reapplyWith(e, isInterface));
     templateElement.interfaces.forEach((e) => reapplyWith(e, true));
