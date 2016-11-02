@@ -1,4 +1,4 @@
-library zengen.example.value;
+library zengen_generator.example.value;
 
 import 'package:zengen/zengen.dart';
 

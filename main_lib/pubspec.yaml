@@ -6,8 +6,5 @@ homepage: https://github.com/a14n/zengen
 environment:
   sdk: '>=1.12.0 <2.0.0'
 dependencies:
+  collection: ^1.0.0
   quiver_hashcode: ^1.0.0
-  source_gen: ^0.5.0
-dev_dependencies:
-  browser: ^0.10.0
-  test: ^0.12.0

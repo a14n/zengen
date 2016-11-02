@@ -1,10 +1,10 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of zengen.example.equals_and_hashcode;
+part of zengen_generator.example.equals_and_hashcode;
 
 // **************************************************************************
 // Generator: ZengenGenerator
-// Target: library zengen.example.equals_and_hashcode
+// Target: library zengen_generator.example.equals_and_hashcode
 // **************************************************************************
 
 @GeneratedFrom(_A)

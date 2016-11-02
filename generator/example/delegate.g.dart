@@ -1,10 +1,10 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of zengen.example.delegate;
+part of zengen_generator.example.delegate;
 
 // **************************************************************************
 // Generator: ZengenGenerator
-// Target: library zengen.example.delegate
+// Target: library zengen_generator.example.delegate
 // **************************************************************************
 
 @GeneratedFrom(_B)

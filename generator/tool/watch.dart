@@ -2,12 +2,10 @@
 // source code is governed by a BSD-style license that can be found in the
 // LICENSE file.
 
-library js_wrapping_generator.tool.build;
-
 import 'package:build/build.dart';
 
 import 'phases.dart';
 
-main() async {
-  await build(phases, deleteFilesByDefault: true);
+main() {
+  watch(phases, deleteFilesByDefault: true);
 }

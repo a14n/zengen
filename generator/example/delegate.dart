@@ -1,4 +1,4 @@
-library zengen.example.delegate;
+library zengen_generator.example.delegate;
 
 import 'dart:math';
 

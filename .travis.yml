@@ -1,5 +1,10 @@
+sudo: false
+
 language: dart
 dart:
   - stable
   - dev
-sudo: false
+
+script:
+  - "(cd main_lib && pub get)"
+  - "(cd generator && pub get && pub run test)"

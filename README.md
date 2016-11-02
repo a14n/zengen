@@ -6,6 +6,31 @@ This project provides a _source_gen_ generator to generate boilerplate code.
 
 This library is inspired from the [project Lombok](http://projectlombok.org) in the Java world.
 
+## Usage
+To use this library in your code :
+
+* add a dependency in your `pubspec.yaml` :
+
+```yaml
+dependencies:
+  zengen: any
+dev_dependencies:
+  zengen_generator: any
+```
+
+* add import in your `dart` code :
+
+```dart
+import 'package:zengen/zengen.dart';
+```
+
+* create files like [tool/phases.dart](https://github.com/a14n/zengen/blob/master/tool/phases.dart),
+[tool/build.dart](https://github.com/a14n/zengen/blob/master/tool/build.dart) and
+[tool/watch.dart](https://github.com/a14n/zengen/blob/master/tool/watch.dart). Change the content of `phases.dart` to include
+files with zengen annotations.
+
+* Use `tool/build.dart` to generate files or `tool/watch.dart` to generate every time a change is done.
+
 ## Features
 
 ### @ToString()
@@ -254,37 +279,6 @@ class A {
   _noSuchMethod(i) => print(i);
 }
 ```
-
-## Usage
-To use this library in your code :
-
-* add a dependency in your `pubspec.yaml` :
-
-```yaml
-dependencies:
-  zengen: any
-```
-
-* add import in your `dart` code :
-
-```dart
-import 'package:zengen/zengen.dart';
-```
-
-* create a script `build.dart` that run the generator
-
-```dart
-import 'package:zengen/generator.dart';
-import 'package:source_gen/source_gen.dart' show build;
-
-main(List<String> args) async {
-  print(await build(args, [new ZengenGenerator()],
-      librarySearchPaths: ['example/', 'lib/', 'web/', 'test/']));
-}
-```
-
-You can use the [build_system package](https://pub.dartlang.org/packages/build_system) to
-allow the generator to be run on every file changes.
 
 ## License
 Apache 2.0

@@ -1,4 +1,4 @@
-library zengen.example.equals_and_hashcode;
+library zengen_generator.example.equals_and_hashcode;
 
 import 'package:zengen/zengen.dart';
 

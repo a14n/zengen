@@ -1,10 +1,10 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of zengen.example.to_string;
+part of zengen_generator.example.to_string;
 
 // **************************************************************************
 // Generator: ZengenGenerator
-// Target: library zengen.example.to_string
+// Target: library zengen_generator.example.to_string
 // **************************************************************************
 
 @GeneratedFrom(_A)

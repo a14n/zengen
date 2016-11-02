@@ -19,7 +19,7 @@ import 'package:analyzer/src/string_source.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:source_gen/src/utils.dart';
 import 'package:test/test.dart';
-import 'package:zengen/generator.dart';
+import 'package:zengen_generator/zengen_generator.dart';
 
 testTransformation(String spec, String source, String expectedContent, {skip}) {
   test(spec, () async {

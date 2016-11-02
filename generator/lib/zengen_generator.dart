@@ -2,8 +2,6 @@
 // source code is governed by a BSD-style license that can be found in the
 // LICENSE file.
 
-library zengen.generator;
-
 import 'dart:async';
 import 'dart:mirrors';
 
@@ -16,8 +14,8 @@ import 'package:analyzer/src/generated/java_io.dart';
 import 'package:analyzer/src/generated/source_io.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:source_gen/src/utils.dart';
-import 'package:zengen/src/util.dart';
 import 'package:zengen/zengen.dart';
+import 'package:zengen_generator/src/util.dart';
 
 final _zengenLibName = 'zengen';
 

@@ -1,4 +1,4 @@
-library zengen.example.to_string;
+library zengen_generator.example.to_string;
 
 import 'package:zengen/zengen.dart';
 

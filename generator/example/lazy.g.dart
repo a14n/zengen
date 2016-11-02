@@ -1,16 +1,15 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of zengen.example.default_constructor;
+part of zengen_generator.example.delegate;
 
 // **************************************************************************
 // Generator: ZengenGenerator
-// Target: library zengen.example.default_constructor
+// Target: library zengen_generator.example.delegate
 // **************************************************************************
 
 @GeneratedFrom(_A)
 class A {
-  var a;
-  final b;
-  A(this.b, {this.a});
-  A.bis(this.b, {this.a});
+  set a(dynamic v) => _lazyFields[#a] = v;
+  dynamic get a => _lazyFields.putIfAbsent(#a, () => "String");
+  final _lazyFields = <Symbol, dynamic>{};
 }

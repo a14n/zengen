@@ -1,4 +1,4 @@
-library zengen.example.default_constructor;
+library zengen_generator.example.default_constructor;
 
 import 'package:zengen/zengen.dart';
 
