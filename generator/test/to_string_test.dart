@@ -20,7 +20,6 @@ main() {
   testTransformation(
       '@ToString() should create a toString() method',
       r'''
-import 'package:zengen/zengen.dart';
 @ToString()
 class _A {
   static var s;
@@ -43,7 +42,6 @@ class A {
   testTransformation(
       '@ToString() should not use hashCode getter',
       r'''
-import 'package:zengen/zengen.dart';
 @ToString()
 class _A {
   static var s;
@@ -68,7 +66,6 @@ class A {
   testTransformation(
       '@ToString() should not use private accessors',
       r'''
-import 'package:zengen/zengen.dart';
 @ToString()
 class _A {
   var a, _b;
@@ -87,7 +84,6 @@ class A {
   testTransformation(
       '@ToString(includePrivate: true) should use private accessors',
       r'''
-import 'package:zengen/zengen.dart';
 @ToString(includePrivate: true)
 class _A {
   var a, _b;
@@ -106,7 +102,6 @@ class A {
   testTransformation(
       '@ToString(callSuper: true) should call super',
       r'''
-import 'package:zengen/zengen.dart';
 @ToString(callSuper: true)
 class _A {
   static var s;
@@ -129,7 +124,6 @@ class A {
   testTransformation(
       "@ToString(callSuper: false) shouldn't call super",
       r'''
-import 'package:zengen/zengen.dart';
 @ToString(callSuper: false)
 class _A {
   static var s;
@@ -152,7 +146,6 @@ class A {
   testTransformation(
       '@ToString(exclude: const[#b, #d]) should not use b or d',
       r'''
-import 'package:zengen/zengen.dart';
 @ToString(exclude: const [#b, #d])
 class _A {
   static var s;

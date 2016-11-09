@@ -20,7 +20,6 @@ main() {
   testTransformation(
       '@Delegate() should create delagating methods',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A {
   m1();
 }
@@ -39,7 +38,6 @@ class B implements A {
   testTransformation(
       '@Delegate() should work when used on a getter',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A {
   m1();
 }
@@ -58,7 +56,6 @@ class B implements A {
   testTransformation(
       '@Delegate() should work setters and getters are mixed',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A {
   get a;
   set b(v);
@@ -83,7 +80,6 @@ class B implements A {
   testTransformation(
       '@Delegate() should handle parameter',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A {
   m1(a, int b);
 }
@@ -102,7 +98,6 @@ class B implements A {
   testTransformation(
       '@Delegate() should handle optional positionnal parameter',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A {
   m1(String a, [int b = 1, c]);
   m2([int b = 1, c]);
@@ -123,7 +118,6 @@ class B implements A {
   testTransformation(
       '@Delegate() should handle optional named parameter',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A {
   m1(String a, {int b, c});
   m2({int b, c});
@@ -144,7 +138,6 @@ class B implements A {
   testTransformation(
       '@Delegate(exclude: const[#b]) should not create m1',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A {
   m1(String a, {int b, c});
   m2({int b, c});
@@ -165,7 +158,6 @@ class B implements A {
   testTransformation(
       '@Delegate() should handle simple generics',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A<E> {
   E m1(E e);
 }
@@ -184,7 +176,6 @@ class B<E> implements A<E> {
   testTransformation(
       '@Delegate() should handle generics substitution',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A<E> {
   E m1(E e);
 }
@@ -203,7 +194,6 @@ class B implements A<String> {
   testTransformation(
       '@Delegate() should handle generics substitution in generic types',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A<E> {
   Iterable<E> m1(E e);
   Iterable<Iterable<E>> m2(Iterable<E> e);
@@ -226,7 +216,6 @@ class B implements A<String> {
   testTransformation(
       '@Delegate() should handle generics functions',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A<E> {
   m1(Iterable<E> f(Iterable<E> p1, E p2));
 }
@@ -245,7 +234,6 @@ class B implements A<String> {
   testTransformation(
       '@Delegate() should handle generics with type specifications',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A<S,T> {
   T m1(S e);
   S m2(T e);
@@ -266,7 +254,6 @@ class B<S> implements A<S, int> {
   testTransformation(
       '@Delegate() should handle generics with bounds',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A<S,T extends num> {
   T m1(S e);
   S m2(T e);
@@ -296,7 +283,6 @@ class C<T extends num> implements A<String, T> {
   testTransformation(
       '@Delegate() should handle generics not specified',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A<S,T extends int> {
   T m1(S e);
   S m2(T e);
@@ -318,7 +304,6 @@ class B<S> implements A<dynamic, int> {
   testTransformation(
       '@Delegate() should handle operators',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A {
   bool operator >(other);
   void operator []=(String key,value);
@@ -341,7 +326,6 @@ class B implements A {
   testTransformation(
       '@Delegate() should avoid setter',
       r'''
-import 'package:zengen/zengen.dart';
 class A {
   int a;
   get b => null;
@@ -365,7 +349,6 @@ class B implements A {
   testTransformation(
       '@Delegate() should prefix by this. when naming conflicts',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A {
   m1(_a);
 }
@@ -384,7 +367,6 @@ class B implements A {
   testTransformation(
       '@Delegate() should add inherited members',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A {
   m1();
 }
@@ -423,7 +405,6 @@ class C implements B {
   testTransformation(
       '@Delegate() should not create private member',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A {
   m1();
   _m2();
@@ -443,7 +424,6 @@ class B implements A {
   testTransformation(
       '@Delegate() should not add implements clause if already there',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A {
   m1();
   _m2();
@@ -463,7 +443,6 @@ class B implements A {
   testTransformation(
       '@Delegate() should not create member for static member on delegate',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class A {
   m1();
   static m2() => null;

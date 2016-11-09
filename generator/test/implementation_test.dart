@@ -20,7 +20,6 @@ main() {
   testTransformation(
       '@Implementation() should add basic method',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class _A {
   m1();
   @Implementation() _noSuchMethod(i) => print(i);
@@ -37,7 +36,6 @@ class A {
   testTransformation(
       '@Implementation() should handle getter and setter',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class _A {
   String get g;
   void set s(String s);
@@ -56,7 +54,6 @@ class A {
   testTransformation(
       '@Implementation() should handle method parameters',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class _A {
   m1(String p1, p2, int p3, void f(String fp1, fp2));
   @Implementation() _noSuchMethod(i) => print(i);
@@ -73,7 +70,6 @@ class A {
   testTransformation(
       '@Implementation() should handle optional positonal parameters',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class _A {
   m1(String p1, [p2, int p3, void f(String fp1, fp2)]);
   @Implementation() _noSuchMethod(i) => print(i);
@@ -90,7 +86,6 @@ class A {
   testTransformation(
       '@Implementation() should handle optional named parameters',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class _A {
   m1(String p1, {p2, int p3, void f(String fp1, fp2)});
   @Implementation() _noSuchMethod(i) => print(i);
@@ -107,7 +102,6 @@ class A {
   testTransformation(
       '@Implementation() should handle optional positonal parameters with default values',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class _A {
   m1(String p1, [p2 = "t", int p3 = 1]);
   @Implementation() _noSuchMethod(i) => print(i);
@@ -124,7 +118,6 @@ class A {
   testTransformation(
       '@Implementation() should handle optional named parameters with default values',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class _A {
   m1(String p1, {p2: "t", int p3: 1});
   @Implementation() _noSuchMethod(i) => print(i);
@@ -141,7 +134,6 @@ class A {
   testTransformation(
       '@Implementation() should go through class hierarchy',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class I1 {
   int f1;
   i1();
@@ -191,7 +183,6 @@ class C extends B with M2, M3<int> implements I2 {
   testTransformation(
       '@Implementation() should work with generics',
       r'''
-import 'package:zengen/zengen.dart';
 abstract class I1<T> {
   T i1(T t);
 }

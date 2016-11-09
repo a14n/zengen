@@ -15,7 +15,8 @@
 import 'dart:io';
 
 import 'package:analyzer/src/generated/engine.dart';
-import 'package:analyzer/src/string_source.dart';
+import 'package:analyzer/src/generated/java_io.dart';
+import 'package:analyzer/src/generated/source_io.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:source_gen/src/utils.dart';
 import 'package:test/test.dart';
@@ -25,11 +26,26 @@ testTransformation(String spec, String source, String expectedContent, {skip}) {
   test(spec, () async {
     final dir = await Directory.current;
     final context = await getAnalysisContextForProjectPath(dir.path, []);
-    final testSource = new StringSource(source, 'source.dart');
-    context.applyChanges(new ChangeSet()..addedSource(testSource));
-    final lib = context.computeLibraryElement(testSource);
+    final libSource =
+        new FileBasedSource(new JavaFile('${dir.path}/source.dart'));
+    final genSource =
+        new FileBasedSource(new JavaFile('${dir.path}/source.g.dart'));
+    context.applyChanges(
+        new ChangeSet()..addedSource(libSource)..addedSource(genSource));
+    context.applyChanges(new ChangeSet()
+      ..changedContent(
+          libSource,
+          '''
+library source;
+import 'package:zengen/zengen.dart';
+part 'source.g.dart';
+''' +
+              source)
+      ..changedContent(genSource, ''));
+    final lib = context.computeLibraryElement(libSource);
     final content = await new ZengenGenerator().generate(lib, null);
-    final formater = new DartFormatter();
-    expect(formater.format(content), equals(formater.format(expectedContent)));
+    final formatter = new DartFormatter();
+    expect(
+        formatter.format(content), equals(formatter.format(expectedContent)));
   }, skip: skip);
 }

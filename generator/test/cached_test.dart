@@ -126,7 +126,6 @@ main() {
   testTransformation(
       '@Cached() should accept getters',
       r'''
-import 'package:zengen/zengen.dart';
 class _A {
   @Cached() get a => "String";
   @Cached() get b { return "String"; }
@@ -146,7 +145,6 @@ class A {
   testTransformation(
       '@Cached() should accept methods with parameters',
       r'''
-import 'package:zengen/zengen.dart';
 class _A {
   @Cached() int m1() => 1;
   @Cached() int m2(int p1) => 1;
@@ -167,7 +165,6 @@ class A {
   testTransformation(
       '@Cached() should accept methods with optional positional parameters',
       r'''
-import 'package:zengen/zengen.dart';
 class _A {
   @Cached() int m2([int p1]) => 1;
   @Cached() int m3(int p1, [p2, String p3]) => 1;
@@ -186,7 +183,6 @@ class A {
   testTransformation(
       '@Cached() should accept methods with optional named parameters',
       r'''
-import 'package:zengen/zengen.dart';
 class _A {
   @Cached() int m2({int p1}) => 1;
   @Cached() int m3(int p1, {p2, String p3}) => 1;
@@ -205,7 +201,6 @@ class A {
   testTransformation(
       '@Cached() should keep the user defined _createCache',
       r'''
-import 'package:zengen/zengen.dart';
 class _A {
   @Cached() m1() => "String";
   Cache _createCache(Symbol methodName, Function compute) => null;

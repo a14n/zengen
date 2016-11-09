@@ -12,14 +12,14 @@ import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/src/generated/engine.dart';
 import 'package:analyzer/src/generated/java_io.dart';
 import 'package:analyzer/src/generated/source_io.dart';
-import 'package:source_gen/source_gen.dart';
 import 'package:source_gen/src/utils.dart';
 import 'package:zengen/zengen.dart';
+import 'package:zengen_generator/src/incremental_generator.dart';
 import 'package:zengen_generator/src/util.dart';
 
 final _zengenLibName = 'zengen';
 
-class ZengenGenerator extends Generator {
+class ZengenGenerator extends IncrementalGenerator {
   final List<ContentModifier> modifiers = <ContentModifier>[
     new ImplementationContentModifier(),
     new ValueContentModifier(),
@@ -33,99 +33,69 @@ class ZengenGenerator extends Generator {
 
   ZengenGenerator();
 
-  Future<String> generate(Element element, _) async {
-    if (element is LibraryElement) {
-      // create a temporary file to avoid races if changes are applied on the
-      // current lib.
-      final tmpLib = createTmpLib(element);
+  @override
+  Future<String> generateForLibraryElement(LibraryElement library, _) async {
+    final genPart = getGeneratedPart(library);
+    final elements = getElementsFromLibraryElement(library);
 
-      // remove generated part section to avoid dupplicated names
-      final generatedPartName = element.source.shortName
-              .substring(0, element.source.shortName.length - 5) +
-          '.g.dart';
-      final partDirective = tmpLib.unit.directives.firstWhere(
-          (d) => d is PartDirective && d.uriContent == generatedPartName,
-          orElse: () => null);
-      if (partDirective != null) {
-        int offset = partDirective.offset;
-        int end = partDirective.end;
-        tmpLib.context.applyChanges(new ChangeSet()
-          ..changedContent(
-              tmpLib.source,
-              tmpLib.context
-                  .getContents(tmpLib.source)
-                  .data
-                  .replaceRange(offset, end, '')));
-      }
+    // first step : copy all template element and unprivate them into part
+    String content = '';
+    final handledElements =
+        elements.where((e) => modifiers.any((modifier) => modifier.accept(e)));
+    for (final element
+        in handledElements.where((e) => !hasAnnotation(e, GeneratedFrom))) {
+      if (element.unit == genPart) continue;
+      if (element is ClassElement) {
+        // remove leading '_' of Class name
+        final newClassName = element.displayName.substring(1);
 
-      final initialContent = tmpLib.context.getContents(tmpLib.source).data;
+        // skip if already generated
+        if (elements.any((e) => e is ClassElement && e.name == newClassName))
+          continue;
 
-      // elements that are changed
-      final elementsChanged = <String>[];
-
-      // copy all template element and unprivate them
-      String incrementalContent = '';
-      final handledElements = getElementsFromLibraryElement(tmpLib).where(
-          (element) => modifiers.any((modifier) => modifier.accept(element)));
-      for (final element in handledElements) {
+        // check that template is private
         if (element.isPublic) throw 'The template $element must be private';
-        if (element is ClassElement) {
-          // remove leading '_' of Class name
-          final newClassName = element.displayName.substring(1);
-          final ClassDeclaration classNode = element.computeNode();
-          final transformer = new Transformer();
-          transformer.insertAt(
-              classNode.offset, '@GeneratedFrom(${element.displayName})');
+
+        // generate
+        final ClassDeclaration classNode = element.computeNode();
+        final transformer = new Transformer();
+        transformer.insertAt(
+            classNode.offset, '@GeneratedFrom(${element.displayName})');
+        transformer.replace(
+            classNode.name.offset, classNode.name.end, newClassName);
+
+        for (final ConstructorDeclaration constr
+            in classNode.members.where((e) => e is ConstructorDeclaration)) {
           transformer.replace(
-              classNode.name.offset, classNode.name.end, newClassName);
-
-          for (final ConstructorDeclaration constr
-              in classNode.members.where((e) => e is ConstructorDeclaration)) {
-            transformer.replace(
-                constr.returnType.offset, constr.returnType.end, newClassName);
-          }
-          incrementalContent += transformer.applyOnCode(
-              initialContent.substring(classNode.offset, classNode.end),
-              -classNode.offset);
-
-          elementsChanged.add(newClassName);
+              constr.returnType.offset, constr.returnType.end, newClassName);
         }
+        content += transformer.applyOnCode(
+            element.context
+                .getContents(element.source)
+                .data
+                .substring(classNode.offset, classNode.end),
+            initialPadding: -classNode.offset);
       }
-      tmpLib.context.applyChanges(new ChangeSet()
-        ..changedContent(tmpLib.source, initialContent + incrementalContent));
-
-      // incremental modifications
-      loop:
-      while (elementsChanged.isNotEmpty) {
-        if (new String.fromEnvironment("debug") != null) {
-          print('------------------------');
-          print(incrementalContent);
-        }
-        final handledElements = getElementsFromLibraryElement(tmpLib)
-            .where((element) => elementsChanged.contains(element.name));
-        for (final element in handledElements) {
-          for (final modifier in modifiers) {
-            if (!modifier.accept(element)) continue;
-            final transformer = new Transformer();
-            modifier.visit(element, transformer);
-            if (transformer.hasTransformations) {
-              incrementalContent = transformer.applyOnCode(
-                  incrementalContent, -initialContent.length);
-              tmpLib.context.applyChanges(new ChangeSet()
-                ..changedContent(
-                    tmpLib.source, initialContent + incrementalContent));
-              continue loop;
-            }
-          }
-          elementsChanged.remove(element.name);
-        }
-      }
-      tmpLib.context
-          .applyChanges(new ChangeSet()..removedSource(tmpLib.source));
-
-      return incrementalContent;
     }
-    return null;
+    if (content.isNotEmpty) return content;
+
+    // init content with part content
+    content = genPart.context.getContents(genPart.source).data;
+
+    // find the first matching element to refine
+    for (final element
+        in handledElements.where((e) => hasAnnotation(e, GeneratedFrom))) {
+      for (final modifier in modifiers) {
+        if (!modifier.accept(element)) continue;
+        final transformer = new Transformer();
+        modifier.visit(element, transformer);
+        if (transformer.hasTransformations) {
+          content = transformer.applyOnCode(content);
+          return content;
+        }
+      }
+    }
+    return content;
   }
 
   /// Create a duplicated library of [library].
@@ -598,8 +568,7 @@ class CachedContentModifier implements ContentModifier {
         .forEach((e) => transformer.removeNode(e));
 
     // TODO(aa) inject content
-    final libContent =
-        clazz.library.context.getContents(clazz.library.source).data;
+    final libContent = clazz.context.getContents(clazz.source).data;
 
     // build initFn
     String initFn =

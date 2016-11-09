@@ -20,7 +20,6 @@ main() {
   testTransformation(
       '@EqualsAndHashCode() should create the getter hashCode and the operator==',
       r'''
-import 'package:zengen/zengen.dart';
 @EqualsAndHashCode()
 class _A {
   static var s;
@@ -44,7 +43,6 @@ class A {
   testTransformation(
       '@EqualsAndHashCode() should not use hashCode getter',
       r'''
-import 'package:zengen/zengen.dart';
 @EqualsAndHashCode()
 class _A {
   static var s;
@@ -69,7 +67,6 @@ class A {
   testTransformation(
       '@EqualsAndHashCode() should not use private accessors',
       r'''
-import 'package:zengen/zengen.dart';
 @EqualsAndHashCode()
 class _A {
   var a, _b;
@@ -89,7 +86,6 @@ class A {
   testTransformation(
       '@EqualsAndHashCode(includePrivate: true) should use private accessors',
       r'''
-import 'package:zengen/zengen.dart';
 @EqualsAndHashCode(includePrivate: true)
 class _A {
   var a, _b;
@@ -109,7 +105,6 @@ class A {
   testTransformation(
       '@EqualsAndHashCode(callSuper: true) should call super',
       r'''
-import 'package:zengen/zengen.dart';
 @EqualsAndHashCode(callSuper: true)
 class _B extends A {
   static var s;
@@ -133,7 +128,6 @@ class B extends A {
   testTransformation(
       "@EqualsAndHashCode(callSuper: false) shouldn't call super",
       r'''
-import 'package:zengen/zengen.dart';
 @EqualsAndHashCode(callSuper: false)
 class _C extends A {
   static var s;
@@ -157,7 +151,6 @@ class C extends A {
   testTransformation(
       '@EqualsAndHashCode(exclude: const[#b, #d]) should not use b or d',
       r'''
-import 'package:zengen/zengen.dart';
 @EqualsAndHashCode(exclude: const [#b, #d])
 class _D {
   static var s;

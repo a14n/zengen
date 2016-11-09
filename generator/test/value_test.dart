@@ -20,7 +20,6 @@ main() {
   testTransformation(
       '@Value() should create a constructor and hash/equals + toString',
       r'''
-import 'package:zengen/zengen.dart';
 @Value()
 class _A {
 }
@@ -38,7 +37,6 @@ class A {
   testTransformation(
       '@Value() should create a const constructor and hash/equals + toString',
       r'''
-import 'package:zengen/zengen.dart';
 @Value(useConst: true)
 class _A {
 }
@@ -56,7 +54,6 @@ class A {
   testTransformation(
       '@Value() should create a constructor with named optional parameters',
       r'''
-import 'package:zengen/zengen.dart';
 @Value()
 class _A {
   final int a;
@@ -81,7 +78,6 @@ class A {
   testTransformation(
       '@Value() should be customized with @EqualsAndHashCode',
       r'''
-import 'package:zengen/zengen.dart';
 @EqualsAndHashCode(exclude: const[#a])
 @Value()
 class _A {

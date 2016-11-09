@@ -19,7 +19,6 @@ import 'src/transformation.dart';
 main() {
   testTransformation('@DefaultConstructor() should create a constructor',
       r'''
-import 'package:zengen/zengen.dart';
 class _A {
   @DefaultConstructor() external _A();
 }
@@ -34,7 +33,6 @@ class A {
 
   testTransformation('@DefaultConstructor() should create a const constructor',
       r'''
-import 'package:zengen/zengen.dart';
 class _A {
   @DefaultConstructor(useConst: true) external _A();
 }
@@ -50,7 +48,6 @@ class A {
   testTransformation(
       '@DefaultConstructor() should create a constructor if only final fields',
       r'''
-import 'package:zengen/zengen.dart';
 class _A {
   final a, b;
   @DefaultConstructor() external _A();
@@ -79,7 +76,6 @@ class B {
   testTransformation(
       '@DefaultConstructor() should not use final initialized fields',
       r'''
-import 'package:zengen/zengen.dart';
 class _A {
   final a, b = 1;
   @DefaultConstructor() external _A();

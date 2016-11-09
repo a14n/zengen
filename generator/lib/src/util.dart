@@ -160,7 +160,7 @@ class Transformer {
   void replace(int begin, int end, String content) =>
       _transformations.add(new SourceTransformation(begin, end, content));
 
-  String applyOnCode(String code, int initialPadding) {
+  String applyOnCode(String code, {int initialPadding: 0}) {
     _transformations.forEach((e) => e.shift(initialPadding));
     for (var i = 0; i < _transformations.length; i++) {
       final t = _transformations[i];

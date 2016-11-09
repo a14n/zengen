@@ -20,7 +20,6 @@ main() {
   testTransformation(
       '@Lazy() should create a getter and a setter',
       r'''
-import 'package:zengen/zengen.dart';
 class _A {
   @Lazy() var a = "String";
 }
@@ -37,7 +36,6 @@ class A {
   testTransformation(
       '@Lazy() should create only a getter for final field',
       r'''
-import 'package:zengen/zengen.dart';
 class _A {
   @Lazy() final a = "String";
 }
@@ -53,7 +51,6 @@ class A {
   testTransformation(
       '@Lazy() should handle types',
       r'''
-import 'package:zengen/zengen.dart';
 class _A {
   @Lazy() String a = "String";
   @Lazy() List<int> l = [1, 2, 3];
@@ -73,7 +70,6 @@ class A {
   testTransformation(
       '@Lazy() should handle several variables on the same field declaration',
       r'''
-import 'package:zengen/zengen.dart';
 class _A {
   @Lazy() String a = "1", b = "2";
 }
