@@ -198,6 +198,7 @@ class MethodArguments {
   bool operator ==(o) =>
       identical(this, o) ||
       runtimeType == o.runtimeType &&
+          o is MethodArguments &&
           _listEquality.equals(positionalArguments, o.positionalArguments) &&
           _mapEquality.equals(namedArguments, o.namedArguments);
 }

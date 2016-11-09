@@ -45,7 +45,7 @@ abstract class _A {
       r'''
 @GeneratedFrom(_A)
 class A {
-  String get g => _noSuchMethod(new StringInvocation('g', isGetter: true));
+  String get g => _noSuchMethod(new StringInvocation('g', isGetter: true)) as String;
   void set s(String s) { _noSuchMethod(new StringInvocation('s', isSetter: true, positionalArguments: [s])); }
   _noSuchMethod(i) => print(i);
 }
@@ -173,7 +173,7 @@ class C extends B with M2, M3<int> implements I2 {
   dynamic m2() => _noSuchMethod(new StringInvocation('m2', isMethod: true));
   dynamic i1() => _noSuchMethod(new StringInvocation('i1', isMethod: true));
   void set f1(int _f1) { _noSuchMethod(new StringInvocation('f1', isSetter: true, positionalArguments: [_f1])); }
-  int get f1 => _noSuchMethod(new StringInvocation('f1', isGetter: true));
+  int get f1 => _noSuchMethod(new StringInvocation('f1', isGetter: true)) as int;
   dynamic m1() => _noSuchMethod(new StringInvocation('m1', isMethod: true));
   dynamic a1() => _noSuchMethod(new StringInvocation('a1', isMethod: true));
   dynamic b1() => _noSuchMethod(new StringInvocation('b1', isMethod: true));
@@ -197,10 +197,10 @@ abstract class _A<T extends num> implements I1<int>, I2<T, String> {
       r'''
 @GeneratedFrom(_A)
 class A<T extends num> implements I1<int>, I2<T, String> {
-  T c1() => _noSuchMethod(new StringInvocation('c1', isMethod: true));
+  T c1() => _noSuchMethod(new StringInvocation('c1', isMethod: true)) as T;
   _noSuchMethod(i) => print(i);
-  T i2(String t) => _noSuchMethod(new StringInvocation('i2', isMethod: true, positionalArguments: [t]));
-  int i1(int t) => _noSuchMethod(new StringInvocation('i1', isMethod: true, positionalArguments: [t]));
+  T i2(String t) => _noSuchMethod(new StringInvocation('i2', isMethod: true, positionalArguments: [t])) as T;
+  int i1(int t) => _noSuchMethod(new StringInvocation('i1', isMethod: true, positionalArguments: [t])) as int;
 }
 ''');
 }

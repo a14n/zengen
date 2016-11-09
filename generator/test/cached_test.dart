@@ -154,9 +154,9 @@ class _A {
       r'''
 @GeneratedFrom(_A)
 class A {
-  int m1() => _caches.putIfAbsent(#m1, () => _createCache(#m1, () => 1)).getValue([]);
-  int m2(int p1) => _caches.putIfAbsent(#m2, () => _createCache(#m2, (int p1) => 1)).getValue([p1]);
-  int m3(int p1, p2, String p3) => _caches.putIfAbsent(#m3, () => _createCache(#m3, (int p1, p2, String p3) => 1)).getValue([p1, p2, p3]);
+  int m1() => _caches.putIfAbsent(#m1, () => _createCache(#m1, () => 1)).getValue([]) as int;
+  int m2(int p1) => _caches.putIfAbsent(#m2, () => _createCache(#m2, (int p1) => 1)).getValue([p1]) as int;
+  int m3(int p1, p2, String p3) => _caches.putIfAbsent(#m3, () => _createCache(#m3, (int p1, p2, String p3) => 1)).getValue([p1, p2, p3]) as int;
   Cache _createCache(Symbol methodName, Function compute) => new Cache(compute);
   final _caches = <Symbol, Cache> {};
 }
@@ -173,8 +173,8 @@ class _A {
       r'''
 @GeneratedFrom(_A)
 class A {
-  int m2([int p1]) => _caches.putIfAbsent(#m2, () => _createCache(#m2, ([int p1]) => 1)).getValue([p1]);
-  int m3(int p1, [p2, String p3]) => _caches.putIfAbsent(#m3, () => _createCache(#m3, (int p1, [p2, String p3]) => 1)).getValue([p1, p2, p3]);
+  int m2([int p1]) => _caches.putIfAbsent(#m2, () => _createCache(#m2, ([int p1]) => 1)).getValue([p1]) as int;
+  int m3(int p1, [p2, String p3]) => _caches.putIfAbsent(#m3, () => _createCache(#m3, (int p1, [p2, String p3]) => 1)).getValue([p1, p2, p3]) as int;
   Cache _createCache(Symbol methodName, Function compute) => new Cache(compute);
   final _caches = <Symbol, Cache> {};
 }
@@ -191,8 +191,8 @@ class _A {
       r'''
 @GeneratedFrom(_A)
 class A {
-  int m2({int p1}) => _caches.putIfAbsent(#m2, () => _createCache(#m2, ({int p1}) => 1)).getValue([], {#p1: p1});
-  int m3(int p1, {p2, String p3}) => _caches.putIfAbsent(#m3, () => _createCache(#m3, (int p1, {p2, String p3}) => 1)).getValue([p1], {#p2: p2, #p3: p3});
+  int m2({int p1}) => _caches.putIfAbsent(#m2, () => _createCache(#m2, ({int p1}) => 1)).getValue([], {#p1: p1}) as int;
+  int m3(int p1, {p2, String p3}) => _caches.putIfAbsent(#m3, () => _createCache(#m3, (int p1, {p2, String p3}) => 1)).getValue([p1], {#p2: p2, #p3: p3}) as int;
   Cache _createCache(Symbol methodName, Function compute) => new Cache(compute);
   final _caches = <Symbol, Cache> {};
 }

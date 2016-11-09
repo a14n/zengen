@@ -57,17 +57,17 @@ class ZengenGenerator extends IncrementalGenerator {
         if (element.isPublic) throw 'The template $element must be private';
 
         // generate
-        final ClassDeclaration classNode = element.computeNode();
+        final classNode = element.computeNode() as ClassDeclaration;
         final transformer = new Transformer();
         transformer.insertAt(
             classNode.offset, '@GeneratedFrom(${element.displayName})');
         transformer.replace(
             classNode.name.offset, classNode.name.end, newClassName);
 
-        for (final ConstructorDeclaration constr
+        for (final constr
             in classNode.members.where((e) => e is ConstructorDeclaration)) {
-          transformer.replace(
-              constr.returnType.offset, constr.returnType.end, newClassName);
+          final returnType = (constr as ConstructorDeclaration).returnType;
+          transformer.replace(returnType.offset, returnType.end, newClassName);
         }
         content += transformer.applyOnCode(
             element.context
@@ -127,9 +127,9 @@ class ToStringContentModifier implements ContentModifier {
 
   @override
   void visit(Element element, Transformer transformer) {
-    final ClassElement clazz = element;
+    final clazz = element as ClassElement;
     final classNode = clazz.computeNode();
-    final ToString annotation = getAnnotation(clazz, ToString);
+    final annotation = getAnnotation(clazz, ToString) as ToString;
 
     getAnnotations(classNode, ToString)
         .forEach((e) => transformer.removeNode(e));
@@ -164,10 +164,10 @@ class EqualsAndHashCodeContentModifier implements ContentModifier {
 
   @override
   void visit(Element element, Transformer transformer) {
-    final ClassElement clazz = element;
+    final clazz = element as ClassElement;
     final classNode = clazz.computeNode();
-    final EqualsAndHashCode annotation =
-        getAnnotation(clazz, EqualsAndHashCode);
+    final annotation =
+        getAnnotation(clazz, EqualsAndHashCode) as EqualsAndHashCode;
 
     getAnnotations(classNode, EqualsAndHashCode)
         .forEach((e) => transformer.removeNode(e));
@@ -215,15 +215,15 @@ class DefaultConstructorContentModifier implements ContentModifier {
 
   @override
   void visit(Element element, Transformer transformer) {
-    final ClassElement clazz = element;
+    final clazz = element as ClassElement;
     clazz.constructors.where(acceptConstructor).forEach(
         (constructor) => replaceConstructor(clazz, transformer, constructor));
   }
 
   void replaceConstructor(ClassElement clazz, Transformer transformer,
       ConstructorElement constructor) {
-    final DefaultConstructor annotation =
-        getAnnotation(constructor, DefaultConstructor);
+    final annotation =
+        getAnnotation(constructor, DefaultConstructor) as DefaultConstructor;
 
     final fields = clazz.fields.where((e) => !e.isStatic);
 
@@ -257,9 +257,9 @@ class ValueContentModifier implements ContentModifier {
 
   @override
   void visit(Element element, Transformer transformer) {
-    final ClassElement clazz = element;
+    final clazz = element as ClassElement;
     final classNode = clazz.computeNode();
-    final Value annotation = getAnnotation(clazz, Value);
+    final annotation = getAnnotation(clazz, Value) as Value;
 
     getAnnotations(classNode, Value).forEach((e) => transformer.removeNode(e));
 
@@ -303,7 +303,7 @@ class DelegateContentModifier implements ContentModifier {
 
   @override
   void visit(Element element, Transformer transformer) {
-    final ClassElement clazz = element;
+    final clazz = element as ClassElement;
     clazz.accessors
         .where(acceptAccessor)
         .forEach((accessor) => generateMembers(clazz, transformer, accessor));
@@ -311,9 +311,10 @@ class DelegateContentModifier implements ContentModifier {
 
   void generateMembers(ClassElement clazz, Transformer transformer,
       PropertyAccessorElement accessor) {
-    final ClassDeclaration classNode = clazz.computeNode();
-    final Delegate annotation = getAnnotation(
-        accessor.isSynthetic ? accessor.variable : accessor, Delegate);
+    final classNode = clazz.computeNode() as ClassDeclaration;
+    final annotation = getAnnotation(
+            accessor.isSynthetic ? accessor.variable : accessor, Delegate)
+        as Delegate;
     final type = accessor.returnType;
 
     //add implements
@@ -328,11 +329,11 @@ class DelegateContentModifier implements ContentModifier {
 
     // remove @Delegate
     final annotations = getAnnotations(
-        accessor.isSynthetic
+        (accessor.isSynthetic
             ? ((accessor.variable.computeNode() as VariableDeclaration).parent
                     as VariableDeclarationList)
                 .parent
-            : accessor.computeNode(),
+            : accessor.computeNode()) as AnnotatedNode,
         Delegate);
     for (final annotation in annotations) {
       transformer.removeNode(annotation);
@@ -355,7 +356,7 @@ class DelegateContentModifier implements ContentModifier {
       ..addAll(clazz.accessors.map((e) => e.name))
       ..addAll((annotation.exclude ?? <Symbol>[])
           .map((e) => MirrorSystem.getName(e)));
-    final ClassElement templateElement = type.element;
+    final templateElement = type.element as ClassElement;
     visitInheritedMembers(
         clazz, accessor.name, templateElement, genericsMapping, excludes,
         (name, code) {
@@ -499,7 +500,7 @@ class LazyContentModifier implements ContentModifier {
 
   @override
   void visit(Element element, Transformer transformer) {
-    final ClassElement clazz = element;
+    final clazz = element as ClassElement;
     transformer.insertAt(clazz.computeNode().end - 1,
         'final _lazyFields = <Symbol, dynamic>{};');
     clazz.accessors
@@ -514,7 +515,7 @@ class LazyContentModifier implements ContentModifier {
 
   void generateMembers(ClassElement clazz, Transformer transformer,
       PropertyAccessorElement accessor) {
-    final VariableDeclaration field = accessor.variable.computeNode();
+    final field = accessor.variable.computeNode() as VariableDeclaration;
     final declaration = field.parent.parent;
     final type = accessor.variable.type;
     final name = accessor.variable.name;
@@ -543,8 +544,8 @@ class CachedContentModifier implements ContentModifier {
 
   @override
   void visit(Element element, Transformer transformer) {
-    final ClassElement clazz = element;
-    final ClassDeclaration classNode = clazz.computeNode();
+    final clazz = element as ClassElement;
+    final classNode = clazz.computeNode() as ClassDeclaration;
     transformer.insertAt(
         classNode.end - 1, 'final _caches = <Symbol, Cache> {};');
 
@@ -609,8 +610,12 @@ class CachedContentModifier implements ContentModifier {
         methodNode.parameters.end,
         methodNode.end,
         '=> _caches.putIfAbsent(#${method.name}, '
-        '() => _createCache(#${method.name}, ${initFn}))'
-        '.getValue($parameters);');
+            '() => _createCache(#${method.name}, ${initFn}))'
+            '.getValue($parameters)' +
+            (methodNode.returnType == null ||
+                    methodNode.returnType.type.isDynamic
+                ? ';'
+                : 'as ${methodNode.returnType};'));
   }
 }
 
@@ -624,8 +629,8 @@ class ImplementationContentModifier implements ContentModifier {
 
   @override
   void visit(Element element, Transformer transformer) {
-    final ClassElement clazz = element;
-    final ClassDeclaration classNode = clazz.computeNode();
+    final clazz = element as ClassElement;
+    final classNode = clazz.computeNode() as ClassDeclaration;
     if (classNode.abstractKeyword != null) {
       transformer.removeToken(classNode.abstractKeyword);
     }
@@ -636,7 +641,7 @@ class ImplementationContentModifier implements ContentModifier {
 
   void generateMembers(
       ClassElement clazz, Transformer transformer, MethodElement method) {
-    final ClassDeclaration classNode = clazz.computeNode();
+    final classNode = clazz.computeNode() as ClassDeclaration;
 
     // remove @Implementation
     getAnnotations(method.computeNode(), Implementation)
@@ -685,9 +690,10 @@ class ImplementationContentModifier implements ContentModifier {
             'set ${accessor.displayName}(${formatParameter(accessor.parameters.first, genericsMapping)}) '
             "{ ${mayPrefixByThis(targetName, accessor.parameters)}(new StringInvocation('${accessor.displayName}', isSetter: true, positionalArguments: [${accessor.parameters.first.name}])); }";
       } else if (accessor.isGetter) {
-        code +=
-            '${replaceTypeToGeneric(accessor.returnType)} get ${accessor.displayName} => '
-            "${mayPrefixByThis(targetName, accessor.parameters)}(new StringInvocation('${accessor.displayName}', isGetter: true));";
+        final returnType = replaceTypeToGeneric(accessor.returnType);
+        code += '$returnType get ${accessor.displayName} => '
+            "${mayPrefixByThis(targetName, accessor.parameters)}(new StringInvocation('${accessor.displayName}', isGetter: true))" +
+            (returnType == 'dynamic' ? ';' : ' as $returnType;');
       }
       addMember(displayName, code,
           clazz == templateElement ? accessor.computeNode() : null);
@@ -766,8 +772,9 @@ class ImplementationContentModifier implements ContentModifier {
       if (returnType.isVoid) {
         code += 'void $methodSignature { $delegateCall; }';
       } else {
-        code +=
-            '${replaceTypeToGeneric(returnType)} $methodSignature => $delegateCall;';
+        final type = replaceTypeToGeneric(returnType);
+        code += '$type $methodSignature => $delegateCall' +
+            (type == 'dynamic' ? ';' : ' as $type;');
       }
       addMember(method.displayName, code,
           clazz == templateElement ? method.computeNode() : null);

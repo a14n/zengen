@@ -14,7 +14,7 @@ class A {
           #fib,
           () => _createCache(
               #fib, (int n) => (n < 2) ? n : fib(n - 1) + fib(n - 2)))
-      .getValue([n]);
+      .getValue([n]) as int;
   Cache _createCache(Symbol methodName, Function compute) => new Cache(compute);
   final _caches = <Symbol, Cache>{};
 }
